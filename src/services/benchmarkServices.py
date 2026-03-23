@@ -61,7 +61,7 @@ class HeadBenchmarkService(BenchmarkService):
         messageDict['originalPrompt'] = prompt
         self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} ready to send messageDict ID: {messageDict['id']}. \n")
         
-        self.mpi.bcast(messageDict)
+        await self.mpi.bcast(messageDict)
         self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} sent messageDict ID: {messageDict['id']}. \n")
         self.current_idx += 1
 

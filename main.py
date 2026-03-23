@@ -13,8 +13,8 @@ if __name__ == "__main__":
     seed = 2
     sim_config = SimulationConfig(
         seed=seed,
-        max_steps=3,
-        step_every_ms=10000,
+        max_steps=3000,
+        step_every_ms=1000,
         log_to_file=True,
         path="./logs/",
         remote=True,
