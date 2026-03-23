@@ -16,12 +16,13 @@ if __name__ == "__main__":
         max_steps=3000,
         step_every_ms=1000,
         log_to_file=True,
-        path="./logs/",
+        path="./logs/date",
         remote=True,
         log_level="INFO",
         include_default_metrics=True,
     )
 
+    '''
     simulation = Simulation(
         get_single_agent_infrastructure(),
         simulation_config=sim_config
@@ -30,6 +31,17 @@ if __name__ == "__main__":
     simulation.register(
         get_single_agent_application(),
         get_static_single_agent_deploy_strategy()
+    )
+    '''
+
+    simulation = Simulation(
+        get_layer_infrastructure(),
+        simulation_config=sim_config
+    )
+
+    simulation.register(
+        get_layer_application(),
+        get_static_layer_deploy_strategy()
     )
 
     simulation.start()

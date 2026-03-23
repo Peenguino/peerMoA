@@ -41,8 +41,11 @@ class HeadBenchmarkService(BenchmarkService):
             if self.current_idx == len(self.dataset_test):
                 self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} all questions sent. \n")
                 self.current_idx += 1
+
+            # Blocking the microservice when his task is finished
+            await self.mpi.recv()
             return
-        
+
         item = self.dataset_test[self.current_idx]
 
         messageDict = {
@@ -79,11 +82,13 @@ class TailBenchmarkService(BenchmarkService):
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} started. \n")
 
         if self.received_count == self.total_expected:        
-            accuracy = (correct_count / len(self.dataset_test)) * 100
+            accuracy = (self.correct_count / len(self.dataset_test)) * 100
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Accuracy: {accuracy:.2f}% ({correct_count}/{len(self.dataset_test)})\n")
+            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Accuracy: {accuracy:.2f}% ({self.correct_count}/{len(self.dataset_test)})\n")
 
         if self.received_count >= self.total_expected:
+            # Blocking the microservice when his task is finished
+            await self.mpi.recv()
             return
 
         self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} checking for messages... \n")
@@ -95,7 +100,7 @@ class TailBenchmarkService(BenchmarkService):
             predicted = str(messageDict["predictedAnswer"]).strip().upper()
 
             if predicted == actual:
-                correct_count += 1
+                self.correct_count += 1
 
             self.received_count += 1
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Predicted {predicted}, answer was {actual}. \n")
