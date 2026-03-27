@@ -3,11 +3,13 @@ from datasets import load_dataset
 
 class BenchmarkService(Service):
 
+    # Assuming that default value for topic is abstract algebra
+    selected_topic = "abstract_algebra"
+
     def __init__(self, service_id, comm_interface = "mpi", store_step = False):
         super().__init__(service_id, comm_interface, store_step)
 
-        # TODO: Per ora stiamo hardcodando topic e datasets, poi possiamo passarli tramite file di config al costruttore di BenchmarkService
-        self.topic = "abstract_algebra"
+        self.topic = BenchmarkService.selected_topic
         self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
         self.dataset_dev = load_dataset("cais/mmlu", self.topic, split="dev")
 
@@ -31,7 +33,9 @@ class HeadBenchmarkService(BenchmarkService):
         return prefix
 
     async def step(self):
-        self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
+
+        if self.current_idx == 0:
+            self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
         
         if len(self.prefix) == 0:
             self.prefix = self.create_few_shot_prefix(self.dataset_dev)
