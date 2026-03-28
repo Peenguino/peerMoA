@@ -1,2 +1,1 @@
-from .elabClassUtils import ElabClassUtils
-from .synthStringUtils import get_synth_string
+from .messageDictUtils import get_message_dict_template

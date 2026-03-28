@@ -1,5 +1,6 @@
 from eclypse.remote.service import Service
 from datasets import load_dataset
+from src.utils.messageDictUtils import get_message_dict_template
 
 class BenchmarkService(Service):
 
@@ -52,11 +53,12 @@ class HeadBenchmarkService(BenchmarkService):
 
         item = self.dataset_test[self.current_idx]
 
+        messageDictTemplate = get_message_dict_template()
+
         messageDict = {
+            **messageDictTemplate,
             "id": self.current_idx,
-            "originalPrompt": "",
             "expectedAnswer": ['A', 'B', 'C', 'D'][item["answer"]],
-            "predictedAnswer": "",
             "count": 0
         }
 

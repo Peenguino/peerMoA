@@ -2,7 +2,8 @@ import ollama
 import questionary
 from datasets import get_dataset_config_names
 from src.services.benchmarkServices import BenchmarkService
-from src.utils.elabClassUtils import ElabClassUtils
+from src.services.midNodeService import MidNodeService
+from src.services.outputNodeService import OutputNodeService
 from src.userInterfaceConfig.applicationMappingConfig import get_applications_mapping_config
 
 def ask_configuration_settings():
@@ -41,7 +42,8 @@ def ask_configuration_settings():
         use_shortcuts=True
     ).ask()
 
-    ElabClassUtils.elab_configuration["model"] = selected_model
+    MidNodeService.selected_model = selected_model
+    OutputNodeService.selected_model = selected_model
 
     # Asking for the benchmark topic
 
