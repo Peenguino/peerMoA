@@ -30,8 +30,8 @@ if __name__ == "__main__":
     seed = 2
     sim_config = SimulationConfig(
         seed=seed,
-        max_steps=500,
-        step_every_ms=1000,
+        max_steps=50000,
+        step_every_ms=10,
         log_to_file=True,
         path=log_path,
         remote=True,
@@ -50,5 +50,9 @@ if __name__ == "__main__":
     )
 
     simulation.start()
-    simulation.wait()
+    try:
+        simulation.wait()
+    except KeyboardInterrupt:
+        print("\n[MAIN] SIGINT from TailNode. Emulation completed.")
+        
     print(simulation.report.application())

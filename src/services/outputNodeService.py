@@ -73,7 +73,7 @@ class OutputNodeService(Service):
             count_same_question = len(self.message_map[msg_id])
             self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} received message for query ID: {msg_id}. Progress: {count_same_question}/{self.expected_messages} \n")
 
-            if count_same_question == 3:
+            if count_same_question == self.expected_messages:
                 self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} all messages received for query ID: {msg_id}. Starting evaluation...\n")
                 receivedDictList = self.message_map[msg_id]
 
@@ -93,5 +93,5 @@ class OutputNodeService(Service):
 
                 await self.mpi.bcast(sentDict)
                 self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} sent final evaluation to TailService. \n")
-                
+
                 del self.message_map[msg_id]

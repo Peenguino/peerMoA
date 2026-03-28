@@ -1,6 +1,8 @@
 from eclypse.remote.service import Service
 from datasets import load_dataset
 from src.utils.messageDictUtils import get_message_dict_template
+import os
+import signal
 
 class BenchmarkService(Service):
 
@@ -89,8 +91,11 @@ class TailBenchmarkService(BenchmarkService):
 
         if self.received_count == self.total_expected:        
             accuracy = (self.correct_count / len(self.dataset_test)) * 100
+            
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Accuracy: {accuracy:.2f}% ({self.correct_count}/{len(self.dataset_test)})\n")
+            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Evaluation completed. Sending SIGINT to main")
+            os.kill(os.getpid(), signal.SIGINT)
 
         if self.received_count >= self.total_expected:
             # Blocking the microservice when his task is finished

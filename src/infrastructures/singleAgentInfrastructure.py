@@ -17,6 +17,10 @@ def get_single_agent_infrastructure() -> Infrastructure:
     )
 
     singleAgentInfrastructure.add_node(
+        "OutputNode"
+    )
+
+    singleAgentInfrastructure.add_node(
         "TailBenchmarkNode"
     )
 
@@ -29,6 +33,11 @@ def get_single_agent_infrastructure() -> Infrastructure:
 
     singleAgentInfrastructure.add_edge(
         "MidNode",
+        "OutputNode"
+    )
+
+    singleAgentInfrastructure.add_edge(
+        "OutputNode",
         "TailBenchmarkNode"
     )
 
