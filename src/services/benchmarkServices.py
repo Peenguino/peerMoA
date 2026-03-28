@@ -1,8 +1,6 @@
 from eclypse.remote.service import Service
 from datasets import load_dataset
 from src.utils.messageDictUtils import get_message_dict_template
-import os
-import signal
 
 class BenchmarkService(Service):
 
@@ -64,7 +62,12 @@ class HeadBenchmarkService(BenchmarkService):
             "count": 0
         }
 
+        '''
+        if want to use short prefix
         prompt = self.prefix + f"Question: {item['question']}\n"
+        '''
+        prompt = f"Question: {item['question']}\n"
+        
         for choice_idx, choice in enumerate(['A', 'B', 'C', 'D']):
             prompt += f"{choice}. {item['choices'][choice_idx]}\n"
         prompt += "Answer: "
@@ -94,8 +97,6 @@ class TailBenchmarkService(BenchmarkService):
             
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Accuracy: {accuracy:.2f}% ({self.correct_count}/{len(self.dataset_test)})\n")
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Evaluation completed. Sending SIGINT to main")
-            os.kill(os.getpid(), signal.SIGINT)
 
         if self.received_count >= self.total_expected:
             # Blocking the microservice when his task is finished
