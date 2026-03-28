@@ -15,6 +15,7 @@ class MidNodeService(Service):
             }
     }
 
+    @staticmethod
     def get_prompt(originalPrompt, *agentAnswers):
 
         answers_generic_layer = [a for a in agentAnswers if a]

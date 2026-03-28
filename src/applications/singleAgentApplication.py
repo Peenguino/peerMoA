@@ -1,4 +1,5 @@
 from src.services.midNodeService import MidNodeService
+from src.services.outputNodeService import OutputNodeService
 from src.services.benchmarkServices import HeadBenchmarkService, TailBenchmarkService
 from eclypse.graph import Application
 
@@ -23,6 +24,10 @@ def get_single_agent_application():
     )
 
     singleAgentApplication.add_service(
+        OutputNodeService("OutputNodeService", expected_messages=1)
+    )
+
+    singleAgentApplication.add_service(
         TailBenchmarkService("TailBenchmarkService")
     )
 
@@ -35,6 +40,11 @@ def get_single_agent_application():
 
     singleAgentApplication.add_edge(
         "MidNodeService",
+        "OutputNodeService"
+    )
+
+    singleAgentApplication.add_edge(
+        "OutputNodeService",
         "TailBenchmarkService"
     )
 

@@ -42,8 +42,8 @@ def ask_configuration_settings():
         use_shortcuts=True
     ).ask()
 
-    MidNodeService.selected_model = selected_model
-    OutputNodeService.selected_model = selected_model
+    MidNodeService.elab_into_string_configuration['model'] = selected_model
+    OutputNodeService.elab_into_char_configuration['model'] = selected_model
 
     # Asking for the benchmark topic
 

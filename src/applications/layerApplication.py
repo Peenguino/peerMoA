@@ -37,7 +37,7 @@ def get_layer_application():
     )
 
     layerApplication.add_service(
-        OutputNodeService("OutputNodeService")
+        OutputNodeService("OutputNodeService", expected_messages=3)
     )
 
     layerApplication.add_service(

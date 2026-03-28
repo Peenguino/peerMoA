@@ -51,9 +51,10 @@ class OutputNodeService(Service):
         else:
             return ""
 
-    def __init__(self, service_id, comm_interface = "mpi", store_step = False):
+    def __init__(self, service_id, expected_messages=3, comm_interface="mpi", store_step=False):
         super().__init__(service_id, comm_interface, store_step)
         self.message_map = {}
+        self.expected_messages = expected_messages
         
     async def step(self):
 
@@ -70,14 +71,14 @@ class OutputNodeService(Service):
             self.message_map[msg_id].append(receivedDict)
 
             count_same_question = len(self.message_map[msg_id])
-            self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} received message for query ID: {msg_id}. Progress: {count_same_question}/3 \n")
+            self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} received message for query ID: {msg_id}. Progress: {count_same_question}/{self.expected_messages} \n")
 
             if count_same_question == 3:
                 self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} all messages received for query ID: {msg_id}. Starting evaluation...\n")
                 receivedDictList = self.message_map[msg_id]
 
                 original_prompt = receivedDictList[0]['originalPrompt']
-                answers_list = [msg['predictedAnswer'] for msg in receivedDictList]
+                answers_list = [msg['generatedText'] for msg in receivedDictList]
 
                 synthetized_prompt = OutputNodeService.get_prompt(original_prompt, *answers_list)
         
@@ -92,3 +93,5 @@ class OutputNodeService(Service):
 
                 await self.mpi.bcast(sentDict)
                 self.logger.info(f"=====\n OutputNodeService ID: {self._service_id} sent final evaluation to TailService. \n")
+                
+                del self.message_map[msg_id]
