@@ -46,11 +46,20 @@ They stores **agents behaviour**, each one got a *specific role*:
     - The first agent of the [`LayerApplication`](../applications/layerApplication.py). His role is to broadcast the current message to the next three [`MidNodeServices`](./midNodeService.py).
 - [`MidNodeService`](./src/services/midNodeService.py)
     - Agent that calls the selected model. He waits the questions and uses them to generate the prompt.
-    - After the response from the model he sends to all his neighbours the message in the [`messageDictTemplate`](./src/utils/messageDictUtils.py) writing the answer *value* at the `messageDict.predictedAnswer` *key*.
+    - After the response from the model he sends to all his neighbours the message in the [`messageDictTemplate`](./src/utils/messageDictUtils.py) writing the generated text *value* at the `generatedText` *key* into `messageDict` map.
+    - This service uses an high temperature value $t$.
+    - The interaction with the model it's based on *system/user* format prompt:
+        - `System Prompt`: Describes meta informations, so for this `Service`:
+            - If the `Service` it's placed in the first `ApplicationLayer` the system prompt describes the service behaviour without any previous generated answer.
+            - If the `Service` it's placed in any other position the system prompt describes the service behaviour using the answer generated from the previous `OutputNodeService`.
+        - `User Prompt`: Describes the real prompt, in this case the question from the dataset's entry.
 - [`OutputNodeService`](./src/services/outputNodeService.py)
-    - write here
+    - It waits for each of the previous layer's `Services`, the count it's defined in the constructor.
+    - This service uses a low temperature $t$ value, because his role it's to synthesize previous generated text into the correct answer to the asked question.
+    - The interaction with the model it's based on *system/user* prompt.
 - [`TailBenchmarkService`](./src/services/benchmarkServices.py)
-    - write here
+    - His role it's to handle a `messageDict` and compare two fields `expectedAnswer` and `predictedAnswer`.
+    - At the and it print the score, using the count calculated before.
 
 ### Applications
 
@@ -64,6 +73,6 @@ So using applications we can compose `Services`.
     - [*`SingleAgentApplication`*](./src/applications/singleAgentApplication.py): It offers a single agent deploy, used to test the model without the Mixture of Agent approach on the benchmark's selected topic.
     - [*`LayerApplication`*](./src/applications/layerApplication.py)
 
-#### P2P Applications
+#### Distributed Applications
 
 - next
