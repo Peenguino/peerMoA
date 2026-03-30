@@ -35,8 +35,7 @@ or use the `./run.sh` script.
 
 The UI asks each time configurations for the benchmark:
 
-<video src="./docs/img/gui_run_example.mp4" controls="controls" muted="muted" class="d-block img-fluid w-100" loop="loop" autoplay="autoplay" width="750">
-</video>
+<video src="https://raw.githubusercontent.com/Peenguino/peerMoA/main/docs/clips/gui_run_example.mp4" muted autoplay loop style="max-width: 100%;"></video>
 
 ## Architecture
 
