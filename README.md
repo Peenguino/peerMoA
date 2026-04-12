@@ -83,9 +83,10 @@ So using applications we can compose `Services`.
 ##### [1. *`SingleAgentApplication`*](./src/applications/singleAgentApplication.py)
 
 It offers a single agent deploy, used to test the model without the Mixture of Agent approach on the benchmark's selected topic.
-<div style="text-align: center; padding: 20pt">
-<img src="./docs/img/SingleAgentApplication.drawio.png" width="600">
-</div>
+
+<p align="center">
+    <img src="./docs/img/SingleAgentApplication.drawio.png" width="600">
+</p>
 
 There are two `NodeService`, but the `OutputNodeService` calls the model on low temperature, his role it's to choose the correct option answer on the knowledge shared by the `MidNodeService`.
 
@@ -93,9 +94,9 @@ There are two `NodeService`, but the `OutputNodeService` calls the model on low 
 
 Single layer of the Mixture of Agent approach.
 
-<div style="text-align: center; padding: 20pt">
-<img src="./docs/img/LayerApplication.drawio.png" width="1000">
-</div>
+<p align="center">
+    <img src="./docs/img/LayerApplication.drawio.png" width="1000">
+</p>
 
 #### Distributed Applications
 
