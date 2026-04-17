@@ -62,10 +62,6 @@ class HeadBenchmarkService(BenchmarkService):
             "count": 0
         }
 
-        '''
-        if want to use short prefix
-        prompt = self.prefix + f"Question: {item['question']}\n"
-        '''
         prompt = f"Question: {item['question']}\n"
         
         for choice_idx, choice in enumerate(['A', 'B', 'C', 'D']):
@@ -86,6 +82,7 @@ class TailBenchmarkService(BenchmarkService):
         self.correct_count = 0
         self.received_count = 0
         self.total_expected = len(self.dataset_test)
+        self.correct_counts_per_layer = []
     
     async def step(self):
         if self.received_count == 0:
@@ -103,13 +100,16 @@ class TailBenchmarkService(BenchmarkService):
             actual = messageDict["expectedAnswer"]
             predictions = messageDict.get("layerPredictions", [])
 
-            # Counters for each layer
+            # Counters for each layer:
+            # We are defining an array of counters [0, ..., 0] for each layer
             if not self.correct_counts_per_layer:
                 self.correct_counts_per_layer = [0] * len(predictions)
 
             # Checking each layer
-            for i, pred in enumerate(predictions):
-                if str(pred).strip().upper() == actual:
+            for i, prediction in enumerate(predictions):
+                clean_prediction = str(prediction).strip().upper()
+                self.logger.info(f"=====\n TailBenchmarkService: Layer {i+1} (Actual: {actual}, Predicted: {clean_prediction})")
+                if clean_prediction == actual:
                     self.correct_counts_per_layer[i] += 1
 
             self.received_count += 1
