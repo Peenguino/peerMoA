@@ -62,10 +62,14 @@ They stores **agents behaviour**, each one got a *specific role*:
             - If the `Service` it's placed in the first `ApplicationLayer` the system prompt describes the service behaviour without any previous generated answer.
             - If the `Service` it's placed in any other position the system prompt describes the service behaviour using the answer generated from the previous `OutputNodeService`.
         - `User Prompt` Describes the real prompt, in this case the question from the dataset's entry.
+
 - [`OutputNodeService`](./src/services/outputNodeService.py)
     - It waits for each of the previous layer's `Services`, the count it's defined in the constructor.
     - This service uses a low temperature $t$ value, because his role it's to synthesize previous generated text into the correct answer to the asked question.
     - The interaction with the model it's based on *system/user* prompt.
+    - **Char/String Synth**: The goal is to compute the score for each layer and the final score, so we are following two approaches:
+        - **Char Synth**: A `OutputNodeService` always computes a `char`, this is added on a list in the `messageDict`. Each char will be used in the `TailBenchmarkService` to compute partials and final score.
+        - **String Synth**: To keep alive the MoA strategy the `OutputNodeService` also computes a `String`. This one will be used by `MidNodeServices` from next layer, so they can synth using previous responses.
 - [`TailBenchmarkService`](./src/services/benchmarkServices.py)
     - His role it's to handle a `messageDict` and compare two fields `expectedAnswer` and `predictedAnswer`.
     - At the and it print the score, using the count calculated before.
@@ -92,11 +96,13 @@ There are two `NodeService`, but the `OutputNodeService` calls the model on low 
 
 ##### [2. *`LayerApplication`*](./src/applications/layerApplication.py)
 
-Single layer of the Mixture of Agent approach.
+**Pipeline** built on this **Layer structure** from the Mixture of Agent approach.
 
 <p align="center">
     <img src="./docs/img/LayerApplication.drawio.png" width="1000">
 </p>
+
+The middle part (`InputNodeService`, `MidNodeService`, `OutputNodeService`) will be **replicated** based on the **value asked in UI**.
 
 #### Distributed Applications
 

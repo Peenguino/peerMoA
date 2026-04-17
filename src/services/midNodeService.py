@@ -74,11 +74,12 @@ class MidNodeService(Service):
         
         if receivedDict:
             original_prompt = receivedDict["originalPrompt"]
-            predicted_answer = receivedDict.get("predictedAnswer", "")
+
+            previous_layer_synth_text = receivedDict.get("generatedText", "")
             
             self.logger.info(f"=====\n MidNodeService ID: {self._service_id} received: \n {original_prompt}")
 
-            elaborated = await self.elab_into_string(original_prompt, predicted_answer)
+            elaborated = await self.elab_into_string(original_prompt, previous_layer_synth_text)
             self.logger.info(f"=====\n MidNodeService ID: {self._service_id} answered: {elaborated}\n")
 
             sentDict = {

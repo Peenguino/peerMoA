@@ -88,15 +88,8 @@ class TailBenchmarkService(BenchmarkService):
         self.total_expected = len(self.dataset_test)
     
     async def step(self):
-
         if self.received_count == 0:
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} started. \n")
-
-        if self.received_count == self.total_expected:        
-            accuracy = (self.correct_count / len(self.dataset_test)) * 100
-            
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Accuracy: {accuracy:.2f}% ({self.correct_count}/{len(self.dataset_test)})\n")
 
         if self.received_count >= self.total_expected:
             # Blocking the microservice when his task is finished
@@ -107,13 +100,23 @@ class TailBenchmarkService(BenchmarkService):
         messageDict = await self.mpi.recv()
 
         if messageDict:
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} received messageDict. \n")
             actual = messageDict["expectedAnswer"]
-            predicted = str(messageDict["predictedAnswer"]).strip().upper()
+            predictions = messageDict.get("layerPredictions", [])
 
-            if predicted == actual:
-                self.correct_count += 1
+            # Counters for each layer
+            if not self.correct_counts_per_layer:
+                self.correct_counts_per_layer = [0] * len(predictions)
+
+            # Checking each layer
+            for i, pred in enumerate(predictions):
+                if str(pred).strip().upper() == actual:
+                    self.correct_counts_per_layer[i] += 1
 
             self.received_count += 1
-            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} Predicted {predicted}, answer was {actual}. \n")
-        
+            
+            # Printing results
+            if self.received_count == self.total_expected:
+                self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
+                for i, count in enumerate(self.correct_counts_per_layer):
+                    accuracy = (count / self.total_expected) * 100
+                    self.logger.info(f"Layer {i+1} Accuracy: {accuracy:.2f}% ({count}/{self.total_expected})") 

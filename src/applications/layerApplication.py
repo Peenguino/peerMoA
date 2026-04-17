@@ -8,82 +8,37 @@ class LayerApplication(Application):
     def __init__(self, application_id, node_update_policy = None, edge_update_policy = None, node_assets = None, edge_assets = None, include_default_assets = False, requirement_init = "min", flows = None, seed = None):
         super().__init__(application_id, node_update_policy, edge_update_policy, node_assets, edge_assets, include_default_assets, requirement_init, flows, seed)
 
-def get_layer_application():
+def get_layer_application(num_layers=1, num_agents_per_layer=3):
 
-    layerApplication = LayerApplication(
-        "layerApplication"
-    )
+    layerApplication = LayerApplication("layerApplication")
 
-    # === Handling services assignment
+    layerApplication.add_service(HeadBenchmarkService("HeadBenchmarkService"))
+    layerApplication.add_service(TailBenchmarkService("TailBenchmarkService"))
 
-    layerApplication.add_service(
-        HeadBenchmarkService("HeadBenchmarkService")
-    )
+    for i in range(1, num_layers + 1):
+        # Input Node layer i
+        layerApplication.add_service(InputNodeService(f"InputNodeService-L{i}"))
 
-    layerApplication.add_service(
-        InputNodeService("InputNodeService")
-    )
+        # Mid Nodes layer i
+        for j in range(1, num_agents_per_layer + 1):
+            layerApplication.add_service(MidNodeService(f"MidNodeService-L{i}-({j})"))
 
-    layerApplication.add_service(
-        MidNodeService("MidNodeService-(1)")
-    )
+        # Output Node layer i
+        is_final = (i == num_layers)
+        layerApplication.add_service(
+            OutputNodeService(f"OutputNodeService-L{i}", expected_messages=num_agents_per_layer, is_final_layer=is_final)
+        )
 
-    layerApplication.add_service(
-        MidNodeService("MidNodeService-(2)")
-    )
+    layerApplication.add_edge("HeadBenchmarkService", "InputNodeService-L1")
 
-    layerApplication.add_service(
-        MidNodeService("MidNodeService-(3)")
-    )
+    for i in range(1, num_layers + 1):
+        for j in range(1, num_agents_per_layer + 1):
+            layerApplication.add_edge(f"InputNodeService-L{i}", f"MidNodeService-L{i}-({j})")
+            layerApplication.add_edge(f"MidNodeService-L{i}-({j})", f"OutputNodeService-L{i}")
 
-    layerApplication.add_service(
-        OutputNodeService("OutputNodeService", expected_messages=3)
-    )
+        if i < num_layers:
+            layerApplication.add_edge(f"OutputNodeService-L{i}", f"InputNodeService-L{i+1}")
 
-    layerApplication.add_service(
-        TailBenchmarkService("TailBenchmarkService")
-    )
-
-    # === Handling edges assignment
-
-    layerApplication.add_edge(
-        "HeadBenchmarkService",
-        "InputNodeService"
-    )
-
-    layerApplication.add_edge(
-        "InputNodeService",
-        "MidNodeService-(1)"
-    )
-
-    layerApplication.add_edge(
-        "InputNodeService",
-        "MidNodeService-(2)"
-    )
-
-    layerApplication.add_edge(
-        "InputNodeService",
-        "MidNodeService-(3)"
-    )
-
-    layerApplication.add_edge(
-        "MidNodeService-(1)",
-        "OutputNodeService"
-    )
-
-    layerApplication.add_edge(
-        "MidNodeService-(2)",
-        "OutputNodeService"
-    )
-
-    layerApplication.add_edge(
-        "MidNodeService-(3)",
-        "OutputNodeService"
-    )
-
-    layerApplication.add_edge(
-        "OutputNodeService",
-        "TailBenchmarkService"
-    )
+    layerApplication.add_edge(f"OutputNodeService-L{num_layers}", "TailBenchmarkService")
 
     return layerApplication

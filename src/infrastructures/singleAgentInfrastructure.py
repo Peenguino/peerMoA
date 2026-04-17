@@ -1,6 +1,6 @@
 from eclypse.graph.infrastructure import Infrastructure
 
-def get_single_agent_infrastructure() -> Infrastructure:
+def get_single_agent_infrastructure(**kwargs) -> Infrastructure:
 
     singleAgentInfrastructure = Infrastructure(
         infrastructure_id="singleAgentInfrastructure"

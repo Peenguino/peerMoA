@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
     app_shortname = app_config["shortName"]
     app_functions = gui_res["functions"]
+    num_layers = gui_res.get("num_layers", 1)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     log_path = f"./logs/{app_shortname}_{timestamp}/"
@@ -40,13 +41,13 @@ if __name__ == "__main__":
     )
 
     simulation = Simulation(
-        app_functions["infrastructureFunction"](),
+        app_functions["infrastructureFunction"](num_layers=num_layers),
         simulation_config=sim_config
     )
 
     simulation.register(
-        app_functions["applicationFunction"](),
-        app_functions["deployStrategyFunction"]()
+        app_functions["applicationFunction"](num_layers=num_layers),
+        app_functions["deployStrategyFunction"](num_layers=num_layers)
     )
 
     simulation.start()

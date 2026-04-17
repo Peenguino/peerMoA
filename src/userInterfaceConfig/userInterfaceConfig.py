@@ -62,12 +62,23 @@ def ask_configuration_settings():
     config_application_map = get_applications_mapping_config()
     applications_list = list(config_application_map.keys())
 
+    # Asking for type of pipeline if layer application has been selected
+
     selected_application = questionary.select(
         "Select the application to start:",
         choices=applications_list,
         use_shortcuts=True,
         use_arrow_keys=True
     ).ask()
+
+    num_layers_selected = 1
+    if selected_application == "layerApplication":
+        num_layers_selected = int(questionary.text(
+            "How many layers for the MoA pipeline?",
+            default="1",
+            # Forcing user input: no pipelines longer than 5 layers
+            validate=lambda text: text.isdigit() and int(text) > 0 and int(text) < 5
+        ).ask())
 
     questionary.print(
         f"\n Ready! Model: {selected_model} | Topic: {BenchmarkService.selected_topic} | Application: {selected_application} ",
@@ -76,7 +87,6 @@ def ask_configuration_settings():
 
     return {
         "app_name": selected_application,
-        "functions": config_application_map[selected_application]
+        "functions": config_application_map[selected_application],
+        "num_layers": num_layers_selected
     }
-
-

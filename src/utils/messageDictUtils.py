@@ -6,6 +6,7 @@ def get_message_dict_template():
         "expectedAnswer": "",
         "generatedText": "",
         "predictedAnswer": "",
+        "layerPredictions": [],
         "count": 0
     }
 
