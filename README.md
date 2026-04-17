@@ -31,6 +31,10 @@ python3 -u main.py
 ```
 or use the `./run.sh` script.
 
+To **start it** and **leave it in background** after the UI module:
+- `CTRL + Z` to pause it.
+- `bg && disown` to reactivate it in background and disconnect it from the SSH session.
+
 ### Runtime UI
 
 The UI asks each time configurations for the benchmark:
