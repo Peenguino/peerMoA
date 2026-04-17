@@ -1,3 +1,3 @@
 source .venv/bin/activate
-EXPORT CUDA_VISIBLE_DEVICES=""
-python3 -u main.py
+export CUDA_VISIBLE_DEVICES=""
+nohup python3 -u main.py &
