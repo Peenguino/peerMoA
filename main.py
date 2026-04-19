@@ -1,4 +1,5 @@
 import sys
+import os
 from datetime import datetime
 from src.userInterfaceConfig import ask_configuration_settings
 from src.userInterfaceConfig import get_applications_mapping_config
@@ -8,6 +9,41 @@ from eclypse.simulation import (
     SimulationConfig
 )
 
+def detach_and_run_in_background(log_filename="benchmark_output.log"):
+    try:
+        # First fork
+        if os.fork() > 0:
+            print(f"\n Benchmark going in background...")
+            print(f"\nNow you can eventually close your SSH session, last run will be saved into {log_filename} also.")
+            sys.exit(0)
+    except OSError:
+        sys.exit(1)
+
+    # Creation of a new session from the child process
+    os.setsid()
+
+    # Using the Double-Fork approach:
+    # - forking another time will ensure that the new process is not the session leader
+    try:
+        if os.fork() > 0:
+            sys.exit(0)
+    except OSError:
+        sys.exit(1)
+
+    # Handling std output and error streams to avoid crashes closing the SSH session
+    # - flushing current streams
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    # - opening streams with context manager with:
+    # -- Redirecting stdin into /dev/null
+    # -- Redirecting stdout into last run logs `log_filename`
+    # -- Redirecting stderr into last run logs `log_filename`
+    with open('/dev/null', 'r') as stdin, open(log_filename, 'a') as stdout:
+        os.dup2(stdin.fileno(), sys.stdin.fileno())
+        os.dup2(stdout.fileno(), sys.stdout.fileno())
+        os.dup2(stdout.fileno(), sys.stderr.fileno())
+
 if __name__ == "__main__":
 
     gui_res = ask_configuration_settings()
@@ -16,6 +52,9 @@ if __name__ == "__main__":
     if gui_res == -1:
         print("Error during UI configuration. Exiting the process.")
         sys.exit(1)
+
+    # Handling the process detach
+    detach_and_run_in_background()
 
     # Accessing the current configuration for the selected application
     app_name = gui_res["app_name"]
