@@ -19,7 +19,8 @@ echo "Running background RAM monitoring..."
 (
     echo "# MAIN_PYTHON_PID: $MAIN_PYTHON_PID" > ram_usage_log.csv
     echo "# MONITOR_PID: $BASHPID" >> ram_usage_log.csv
-    echo -e "Timestamp\t\t\t\t\tUsed RAM\tFree RAM" >> ram_usage_log.csv
+
+    echo -e "Timestamp\t\t\t\tUsed RAM\t\tFree RAM" >> ram_usage_log.csv
 
     # Using dummy signal on the PID acquired before
     while kill -0 "$MAIN_PYTHON_PID" 2>/dev/null; do

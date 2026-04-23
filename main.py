@@ -79,7 +79,7 @@ if __name__ == "__main__":
         path=log_path,
         remote=True,
         log_level="INFO",
-        include_default_metrics=True,
+        include_default_metrics=False,
     )
 
     simulation = Simulation(
