@@ -1,3 +1,5 @@
+import os
+import signal
 from eclypse.remote.service import Service
 from datasets import load_dataset
 from src.utils.messageDictUtils import get_message_dict_template
@@ -99,11 +101,6 @@ class TailBenchmarkService(BenchmarkService):
         if self.received_count == 0:
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} started. \n")
 
-        if self.received_count >= self.total_expected:
-            # Blocking the microservice when his task is finished
-            await self.mpi.recv()
-            return
-
         self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} checking for messages... \n")
         messageDict = await self.mpi.recv()
 
@@ -135,4 +132,15 @@ class TailBenchmarkService(BenchmarkService):
                 self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
                 for i, count in enumerate(self.correct_counts_per_layer):
                     accuracy = (count / self.total_expected) * 100
-                    self.logger.info(f"Layer {i+1} Accuracy: {accuracy:.2f}% ({count}/{self.total_expected})") 
+                    self.logger.info(f"Layer {i+1} Accuracy: {accuracy:.2f}% ({count}/{self.total_expected})")
+
+                # Handling simulation termination
+                try:
+                    with open('.main_pid.txt', 'r') as file_pid:
+                        main_pid = int(file_pid.read().strip())
+                        self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} sent SIGINT to main PID: {main_pid} to end simulation.\n")
+                        os.kill(main_pid, signal.SIGINT)
+                except Exception as err:
+                    self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} error sending SIGINT to main PID: {main_pid}.\n")
+
+

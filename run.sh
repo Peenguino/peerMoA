@@ -30,7 +30,7 @@ echo "Running background RAM monitoring..."
         sleep 40
     done
 
-    echo "$(date '+%Y-%m-%d %H:%M:%S') \t MONITORING_FINISHED \t 0" >> ram_usage_log.csv
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') \t MONITORING_FINISHED \t 0" >> ram_usage_log.csv
     # Clearing tmp file containing main py process
     rm -f .main_pid.txt
 ) &
