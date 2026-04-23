@@ -41,4 +41,7 @@ def get_single_agent_infrastructure(**kwargs) -> Infrastructure:
         "TailBenchmarkNode"
     )
 
+    # Handling ACK for backpropagation
+    singleAgentInfrastructure.add_edge("TailBenchmarkNode", "HeadBenchmarkNode")
+
     return singleAgentInfrastructure

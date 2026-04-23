@@ -20,6 +20,7 @@ class HeadBenchmarkService(BenchmarkService):
         super().__init__(service_id, comm_interface, store_step)
         self.current_idx = 0
         self.prefix = ""
+        self.waiting_for_ack = False
 
     def create_few_shot_prefix(self, dev_data, n_shots=5):
         prefix = "Instruction: Answer the following multiple choice questions by giving only the letter (A, B, C, or D) of the correct answer.\n\n"
@@ -35,10 +36,18 @@ class HeadBenchmarkService(BenchmarkService):
 
     async def step(self):
 
+        # Receiving ACK message for backpressure
+        if self.waiting_for_ack:
+            ack_msg = await self.mpi.recv()
+            if ack_msg and ack_msg.get("type") == "ACK":
+                self.waiting_for_ack = False
+            return
+
         if self.current_idx == 0:
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
         
         if len(self.prefix) == 0:
+            # Currently not using the few shot prefix
             self.prefix = self.create_few_shot_prefix(self.dataset_dev)
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} loaded datasets on {self.topic}. \n")
 
@@ -73,7 +82,9 @@ class HeadBenchmarkService(BenchmarkService):
         
         await self.mpi.bcast(messageDict)
         self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} sent messageDict ID: {messageDict['id']}. \n")
+
         self.current_idx += 1
+        self.waiting_for_ack = True
 
 class TailBenchmarkService(BenchmarkService):
 
@@ -113,6 +124,11 @@ class TailBenchmarkService(BenchmarkService):
                     self.correct_counts_per_layer[i] += 1
 
             self.received_count += 1
+
+            # Sending ACK to HeadBenchmarkService for backpressure
+            ack_message = {"type": "ACK", "id": messageDict["id"]}
+            await self.mpi.send("HeadBenchmarkService", ack_message)
+            self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} sent ACK for msg {messageDict['id']}. \n")
             
             # Printing results
             if self.received_count == self.total_expected:

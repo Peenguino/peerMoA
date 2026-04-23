@@ -2,3 +2,5 @@
 logs/
 __pycache__/
 *.log
+ram_usage_log.csv
+.main_pid.txt

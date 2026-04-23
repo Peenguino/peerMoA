@@ -48,4 +48,7 @@ def get_single_agent_application(**kwargs):
         "TailBenchmarkService"
     )
 
+    # Handling ACK for backpropagation
+    singleAgentApplication.add_edge("TailBenchmarkService", "HeadBenchmarkService")
+
     return singleAgentApplication

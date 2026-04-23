@@ -14,7 +14,7 @@ def detach_and_run_in_background(log_filename="benchmark_output.log"):
         # First fork
         if os.fork() > 0:
             print(f"\n Benchmark going in background...")
-            print(f"\nNow you can eventually close your SSH session, last run will be saved into {log_filename} also.")
+            print(f"\nLast run will be saved into {log_filename} also.")
             sys.exit(0)
     except OSError:
         sys.exit(1)
@@ -39,10 +39,13 @@ def detach_and_run_in_background(log_filename="benchmark_output.log"):
     # -- Redirecting stdin into /dev/null
     # -- Redirecting stdout into last run logs `log_filename`
     # -- Redirecting stderr into last run logs `log_filename`
-    with open('/dev/null', 'r') as stdin, open(log_filename, 'a') as stdout:
+    with open('/dev/null', 'r') as stdin, open(log_filename, 'w') as stdout:
         os.dup2(stdin.fileno(), sys.stdin.fileno())
         os.dup2(stdout.fileno(), sys.stdout.fileno())
         os.dup2(stdout.fileno(), sys.stderr.fileno())
+
+    with open('.main_pid.txt', 'w') as pid_file:
+        pid_file.write(str(os.getpid()))
 
 if __name__ == "__main__":
 
