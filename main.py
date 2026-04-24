@@ -94,5 +94,3 @@ if __name__ == "__main__":
 
     simulation.start()
     simulation.wait()
-        
-    print(simulation.report.application())
