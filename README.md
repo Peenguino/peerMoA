@@ -24,16 +24,7 @@ pip install -r requirements.txt
 
 ## Running
 
-To launch the script, being into the *peerMoA* directory:
-
-```BASH
-python3 -u main.py
-```
-or use the `./run.sh` script.
-
-To **start it** and **leave it in background** after the UI module:
-- `CTRL + Z` to pause it.
-- `bg && disown` to reactivate it in background and disconnect it from the SSH session.
+To launch the tool use the `./run.sh` script.
 
 ### Runtime UI
 
@@ -75,8 +66,8 @@ They stores **agents behaviour**, each one got a *specific role*:
         - **Char Synth**: A `OutputNodeService` always computes a `char`, this is added on a list in the `messageDict`. Each char will be used in the `TailBenchmarkService` to compute partials and final score.
         - **String Synth**: To keep alive the MoA strategy the `OutputNodeService` also computes a `String`. This one will be used by `MidNodeServices` from next layer, so they can synth using previous responses.
 - [`TailBenchmarkService`](./src/services/benchmarkServices.py)
-    - His role it's to handle a `messageDict` and compare two fields `expectedAnswer` and `predictedAnswer`.
-    - At the and it print the score, using the count calculated before.
+    - His role it's to handle a `messageDict` and compare two fields `expectedAnswer` and `predictedAnswer`, after that it sends an ACK to `HeadBenchmarkService`.
+    - At the end it print the score, using the count calculated before.
 
 ### Applications
 
@@ -139,5 +130,4 @@ uv pip install -r requirements.txt
 
 # To run it without GPU specs
 CUDA_VISIBLE_DEVICES="" python3 -u main.py
-
 ```
