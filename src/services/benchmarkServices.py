@@ -16,13 +16,20 @@ class BenchmarkService(Service):
         self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
         self.dataset_dev = load_dataset("cais/mmlu", self.topic, split="dev")
 
+
 class HeadBenchmarkService(BenchmarkService):
 
     def __init__(self, service_id, comm_interface = "mpi", store_step = False):
         super().__init__(service_id, comm_interface, store_step)
         self.current_idx = 0
         self.prefix = ""
-        self.waiting_for_ack = False
+
+        # Defining a sliding window:
+        # - We were using single acks from TailBenchmarkService to allow sending new entry from current Service
+        # - The goal was to reduce the Out Of Memory caused by the unlimited queue
+        # - Now we assume that the max size of the sliding window is 10 entries
+        self.max_in_flight = 10
+        self.current_in_flight = 0
 
     def create_few_shot_prefix(self, dev_data, n_shots=5):
         prefix = "Instruction: Answer the following multiple choice questions by giving only the letter (A, B, C, or D) of the correct answer.\n\n"
@@ -38,13 +45,6 @@ class HeadBenchmarkService(BenchmarkService):
 
     async def step(self):
 
-        # Receiving ACK message for backpressure
-        if self.waiting_for_ack:
-            ack_msg = await self.mpi.recv()
-            if ack_msg and ack_msg.get("type") == "ACK":
-                self.waiting_for_ack = False
-            return
-
         if self.current_idx == 0:
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
         
@@ -53,15 +53,34 @@ class HeadBenchmarkService(BenchmarkService):
             self.prefix = self.create_few_shot_prefix(self.dataset_dev)
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} loaded datasets on {self.topic}. \n")
 
+        # Dataset end handling
         if self.current_idx >= len(self.dataset_test):
-            if self.current_idx == len(self.dataset_test):
-                self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} all questions sent. \n")
-                self.current_idx += 1
+            # Checking if there are still in flight messages
+            if self.current_in_flight > 0:
+                ack_msg = await self.mpi.recv()
+                if ack_msg and ack_msg.get("type") == "ACK":
+                    self.current_in_flight -= 1
+            else:
+                if self.current_idx == len(self.dataset_test):
+                    self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} all questions sent and all ACKs received. \n")
+                    self.current_idx += 1
 
-            # Blocking the microservice when his task is finished
-            await self.mpi.recv()
+                # Blocking the microservice when his task is finished
+                await self.mpi.recv()
             return
 
+        # Full sliding window handling
+        if self.current_in_flight >= self.max_in_flight:
+            self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} sliding window is full ({self.max_in_flight}). Waiting for ACK... \n")
+            
+            ack_msg = await self.mpi.recv()
+            if ack_msg and ack_msg.get("type") == "ACK":
+                self.current_in_flight -= 1
+                self.logger.info(f"=====\n New ACK ID {ack_msg['id']}. Now there is space in the sliding window.\n")
+            
+            return
+
+        # Sending new message
         item = self.dataset_test[self.current_idx]
 
         messageDictTemplate = get_message_dict_template()
@@ -83,10 +102,11 @@ class HeadBenchmarkService(BenchmarkService):
         self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} ready to send messageDict ID: {messageDict['id']}. \n")
         
         await self.mpi.bcast(messageDict)
-        self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} sent messageDict ID: {messageDict['id']}. \n")
-
+        
+        # Updating window's state
         self.current_idx += 1
-        self.waiting_for_ack = True
+        self.current_in_flight += 1
+        self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} sent messageDict ID: {messageDict['id']}. In flight: {self.current_in_flight}/{self.max_in_flight} \n")
 
 class TailBenchmarkService(BenchmarkService):
 
@@ -109,7 +129,7 @@ class TailBenchmarkService(BenchmarkService):
             predictions = messageDict.get("layerPredictions", [])
 
             # Counters for each layer:
-            # We are defining an array of counters [0, ..., 0] for each layer
+            # - We are defining an array of counters [0, ..., 0] for each layer
             if not self.correct_counts_per_layer:
                 self.correct_counts_per_layer = [0] * len(predictions)
 

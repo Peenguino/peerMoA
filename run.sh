@@ -22,7 +22,7 @@ echo "Running background RAM monitoring..."
     echo "# MAIN_PYTHON_PID: $MAIN_PYTHON_PID" > "$MONITOR_LOGS"
     echo "# MONITOR_PID: $BASHPID" >> "$MONITOR_LOGS"
 
-    echo -e "Timestamp\t\t\t\tUsed RAM\t\tFree RAM" >> "$MONITOR_LOGS"
+    echo -e "Timestamp\t\t\t\tUsed RAM\tFree RAM" >> "$MONITOR_LOGS"
 
     # Using dummy signal on the PID acquired before
     while kill -0 "$MAIN_PYTHON_PID" 2>/dev/null; do

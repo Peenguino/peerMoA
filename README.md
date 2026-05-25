@@ -103,9 +103,14 @@ The middle part (`InputNodeService`, `MidNodeService`, `OutputNodeService`) will
 
 - next
 
-## Setup Benchmarks on ARM VM
+## Setup PeerMoA
+
+List of deploy configs of the tool on various architectures.
+
+### Setup Through Ollama bin
 
 List of commands used to setup peerMoA on an ARM VM, no sudo permission.
+- Using the `ollama bin` **not** the `systemcls service`.
 
 ```sh
 # Downloading ollama binaries
@@ -130,4 +135,27 @@ uv pip install -r requirements.txt
 
 # To run it without GPU specs
 CUDA_VISIBLE_DEVICES="" python3 -u main.py
+```
+
+### Setup Ollama on GPU AMD Through Ollama Service
+
+Open the configuration of ollama service:
+
+```sh
+# Opening config of the ollama service
+sudo systemctl edit ollama.service
+```
+
+Into the file define the variable:
+
+```sh
+[Service]
+Environment="HSA_OVERRIDE_GFX_VERSION=10.3.0"
+```
+
+After that we can restart the service.
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
 ```

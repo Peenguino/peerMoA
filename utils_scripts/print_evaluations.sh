@@ -13,6 +13,5 @@ if [ ! -f "$LOG_FILE" ]; then
     exit 1
 fi
 
-# Esegui grep per trovare le righe che contengono le valutazioni intermedie
 echo "--- Extracting evaluations from $LOG_FILE ---"
 grep "TailBenchmarkService: Layer" "$LOG_FILE"

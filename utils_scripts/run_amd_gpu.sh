@@ -2,9 +2,6 @@
 
 source .venv/bin/activate
 
-
-# forcing AMD GPU usage through ROCm support
-export HSA_OVERRIDE_GFX_VERSION=10.3.0
 python3 -u main.py
 
 sleep 5
