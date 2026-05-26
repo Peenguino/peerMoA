@@ -13,8 +13,9 @@ class BenchmarkService(Service):
         super().__init__(service_id, comm_interface, store_step)
 
         self.topic = BenchmarkService.selected_topic
-        self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
-        self.dataset_dev = load_dataset("cais/mmlu", self.topic, split="dev")
+        self.dataset_test = None
+        self.dataset_dev = None
+
 
 
 class HeadBenchmarkService(BenchmarkService):
@@ -44,6 +45,11 @@ class HeadBenchmarkService(BenchmarkService):
         return prefix
 
     async def step(self):
+
+        if self.dataset_test is None:
+            self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} loading datasets... \n")
+            self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
+            self.dataset_dev = load_dataset("cais/mmlu", self.topic, split="dev")
 
         if self.current_idx == 0:
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
@@ -114,10 +120,15 @@ class TailBenchmarkService(BenchmarkService):
         super().__init__(service_id, comm_interface, store_step)
         self.correct_count = 0
         self.received_count = 0
-        self.total_expected = len(self.dataset_test)
+        self.total_expected = 0
         self.correct_counts_per_layer = []
     
     async def step(self):
+
+        if self.dataset_test is None:
+            self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
+            self.total_expected = len(self.dataset_test)
+
         if self.received_count == 0:
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} started. \n")
 
