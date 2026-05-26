@@ -22,6 +22,8 @@ cd "$REPO_ROOT" || exit 1
 
 source .venv/bin/activate
 
+export PYTHONPATH="$REPO_ROOT"
+
 # Important: IP of Machine that hosts the Master
 MASTER_IP="10.66.66.11"
 
