@@ -1,0 +1,9 @@
+{
+  "HeadBenchmarkNode": 1,
+  "TailBenchmarkNode": 1,
+  "MidNode-L1-(1)": 1,
+  "MidNode-L2-(1)": 1,
+  "MidNode-L3-(1)": 1,
+  "InputNode-L1": 1,
+  "OutputNode-L1": 1
+}

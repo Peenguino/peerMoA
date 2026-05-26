@@ -1,7 +1,12 @@
 #!/bin/bash
 
 source .venv/bin/activate
+# env variable for obscure NVIDIA GPU, comment to make it run on it
 export CUDA_VISIBLE_DEVICES=""
+
+# flag env variable for normal running on a single machine
+export PEERMOA_RUN_MODE="local"
+
 python3 -u main.py
 
 sleep 5

@@ -3,6 +3,9 @@ import os
 from datetime import datetime
 from src.userInterfaceConfig import ask_configuration_settings
 from src.userInterfaceConfig import get_applications_mapping_config
+from utils.dynamicPlacementFactory import DynamicPlacementFactory
+from eclypse.remote.bootstrap.options_factory import RayOptionsFactory
+from eclypse.remote import RemoteBootstrap
 
 from eclypse.simulation import (
     Simulation,
@@ -47,6 +50,22 @@ def detach_and_run_in_background(log_filename="benchmark_output.log"):
     with open('.main_pid.txt', 'w') as pid_file:
         pid_file.write(str(os.getpid()))
 
+def select_run_mode():
+    run_mode = os.environ.get("PEERMOA_RUN_MODE", "local").lower()
+    remote_config = ""
+
+    if run_mode == "local":
+        # Local run: only 1 machine
+        remote_config = True
+    elif run_mode == "dist_strict":
+        # Fixed Cluster: fixed assignments defined by the user
+        remote_config = RemoteBootstrap(ray_options_factory=DynamicPlacementFactory())
+    else: 
+        # Dynamic Cluster: assignments handled by Ray
+        remote_config = RemoteBootstrap(ray_options_factory=RayOptionsFactory())
+    
+    return remote_config
+
 if __name__ == "__main__":
 
     gui_res = ask_configuration_settings()
@@ -77,7 +96,7 @@ if __name__ == "__main__":
         step_every_ms=10,
         log_to_file=True,
         path=log_path,
-        remote=True,
+        remote=select_run_mode(),
         log_level="INFO",
         include_default_metrics=False,
     )
