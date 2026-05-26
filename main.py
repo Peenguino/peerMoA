@@ -3,9 +3,8 @@ import os
 from datetime import datetime
 from src.userInterfaceConfig import ask_configuration_settings
 from src.userInterfaceConfig import get_applications_mapping_config
-from utils.dynamicPlacementFactory import DynamicPlacementFactory
-from eclypse.remote.bootstrap.options_factory import RayOptionsFactory
-from eclypse.remote import RemoteBootstrap
+from src.utils.dynamicPlacementFactory import DynamicPlacementFactory
+from eclypse.remote.bootstrap import RayOptionsFactory, RemoteBootstrap
 
 from eclypse.simulation import (
     Simulation,
