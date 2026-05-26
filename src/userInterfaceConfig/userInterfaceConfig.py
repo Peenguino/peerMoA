@@ -76,8 +76,8 @@ def ask_configuration_settings():
         num_layers_selected = int(questionary.text(
             "How many layers for the MoA pipeline?",
             default="1",
-            # Forcing user input: no pipelines longer than 5 layers
-            validate=lambda text: text.isdigit() and int(text) > 0 and int(text) < 5
+            # Forcing user input: no pipelines longer than 3 layers
+            validate=lambda text: text.isdigit() and int(text) > 0 and int(text) < 4
         ).ask())
 
     questionary.print(
