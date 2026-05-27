@@ -7,4 +7,7 @@ class DynamicPlacementFactory(RayOptionsFactory):
         node_id = name.split("/")[-1]
         if node_id != "manager":
             options["resources"] = {node_id: 1}
+            
+        options["num_cpus"] = 0
         return options
+    

@@ -38,6 +38,7 @@ sleep 3
 
 # Ray address used by main.py
 # export RAY_ADDRESS="ray://$MASTER_IP:6379"
+export RAY_ADDRESS="auto"
 
 # Flag for main.py: we are using fixed placement
 export PEERMOA_RUN_MODE="dist_strict"
