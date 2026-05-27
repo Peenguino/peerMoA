@@ -42,6 +42,6 @@ def get_layer_application(num_layers=1, num_agents_per_layer=3):
     layerApplication.add_edge(f"OutputNodeService-L{num_layers}", "TailBenchmarkService")
 
     # Handling ACK for backpropagation
-    # layerApplication.add_edge("TailBenchmarkService", "HeadBenchmarkService")
+    layerApplication.add_edge("TailBenchmarkService", "HeadBenchmarkService")
 
     return layerApplication
