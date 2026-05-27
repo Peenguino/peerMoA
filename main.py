@@ -5,6 +5,7 @@ from src.userInterfaceConfig import ask_configuration_settings
 from src.userInterfaceConfig import get_applications_mapping_config
 from src.utils.dynamicPlacementFactory import DynamicPlacementFactory
 from eclypse.remote.bootstrap import RayOptionsFactory, RemoteBootstrap
+from src.services import BenchmarkService
 
 from eclypse.simulation import (
     Simulation,
@@ -74,8 +75,14 @@ if __name__ == "__main__":
         print("Error during UI configuration. Exiting the process.")
         sys.exit(1)
 
+    # --- PRE-CACHING ---
+    from datasets import load_dataset
+    load_dataset("cais/mmlu", BenchmarkService.selected_topic, split="test")
+    load_dataset("cais/mmlu", BenchmarkService.selected_topic, split="dev")
+    # --- - ---
+
     # Handling the process detach
-    detach_and_run_in_background()
+    # detach_and_run_in_background()
 
     # Accessing the current configuration for the selected application
     app_name = gui_res["app_name"]

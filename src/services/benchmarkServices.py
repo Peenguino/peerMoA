@@ -1,5 +1,6 @@
 import os
 import signal
+import asyncio
 from eclypse.remote.service import Service
 from datasets import load_dataset
 from src.utils.messageDictUtils import get_message_dict_template
@@ -53,6 +54,7 @@ class HeadBenchmarkService(BenchmarkService):
 
         if self.current_idx == 0:
             self.logger.info(f"=====\n HeadBenchmarkService ID: {self._service_id} started. \n")
+            await asyncio.sleep(5)
         
         if len(self.prefix) == 0:
             # Currently not using the few shot prefix

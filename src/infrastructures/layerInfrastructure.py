@@ -26,6 +26,6 @@ def get_layer_infrastructure(num_layers=1, num_agents_per_layer=3) -> Infrastruc
     layerInfrastructure.add_edge(f"OutputNode-L{num_layers}", "TailBenchmarkNode")
 
     # Handling ACK for backpropagation
-    layerInfrastructure.add_edge("TailBenchmarkNode", "HeadBenchmarkNode")
+    # layerInfrastructure.add_edge("TailBenchmarkNode", "HeadBenchmarkNode")
 
     return layerInfrastructure
