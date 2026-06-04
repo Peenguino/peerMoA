@@ -99,15 +99,78 @@ There are two `NodeService`, but the `OutputNodeService` calls the model on low 
 
 The middle part (`InputNodeService`, `MidNodeService`, `OutputNodeService`) will be **replicated** based on the **value asked in UI**.
 
-#### Distributed Applications
 
-- next
+## Distributed Cluster Deploy
 
-## Setup PeerMoA
+Using scripts `master_fixed_start.sh` and `worker_fixed_start.sh` on 3 different machines we can deploy
+this tool in a distributed way. This is the fixed Service - Machine mapping that we are assuming:
+
+- **Machine A (Master)**: 
+    ```json
+    {
+        "HeadBenchmarkNode": 1,
+        "TailBenchmarkNode": 1,
+        "MidNode-L1-(1)": 1,
+        "MidNode-L2-(1)": 1,
+        "MidNode-L3-(1)": 1,
+        "InputNode-L1": 1,
+        "OutputNode-L1": 1
+    }
+    ```
+- **Machine B (Worker)**: 
+    ```json
+    {
+        "MidNode-L1-(2)": 1,
+        "MidNode-L2-(2)": 1,
+        "MidNode-L3-(2)": 1,
+        "InputNode-L2": 1,
+        "OutputNode-L2": 1
+    }
+    ```
+- **Machine A (Master)**: 
+    ```json
+    {
+        "MidNode-L1-(3)": 1,
+        "MidNode-L2-(3)": 1,
+        "MidNode-L3-(3)": 1,
+        "InputNode-L3": 1,
+        "OutputNode-L3": 1
+    }
+    ```
+
+### Run Cluster
+
+Each machine requires `uv` to install the pinned version of Python.
+
+```sh
+# If uv is not installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Setup venv and installing dependencies
+uv venv
+uv pip install -r requirements.txt
+```
+
+For each machine we run proper script, so:
+
+```sh
+# On Machine A
+./run_master_a.sh
+
+# On Machine B
+./run_worker_b.sh
+
+# On Machine C
+./run_worker_c.sh
+```
+
+We suggest to run in this order, so the master first letting him stop on the model choice and after that the workers.
+
+## Notes on Setup PeerMoA
 
 List of deploy configs of the tool on various architectures.
 
-### Setup Through Ollama bin
+### 01 - Setup Through Ollama bin
 
 List of commands used to setup peerMoA on an ARM VM, no sudo permission.
 - Using the `ollama bin` **not** the `systemcls service`.
@@ -137,7 +200,7 @@ uv pip install -r requirements.txt
 CUDA_VISIBLE_DEVICES="" python3 -u main.py
 ```
 
-### Setup Ollama on GPU AMD Through Ollama Service
+### 02 - Setup Ollama on GPU AMD Through Ollama Service
 
 Open the configuration of ollama service:
 
