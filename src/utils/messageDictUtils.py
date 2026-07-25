@@ -7,7 +7,8 @@ def get_message_dict_template():
         "generatedText": "",
         "predictedAnswer": "",
         "layerPredictions": [],
-        "count": 0
+        "count": 0,
+        "start_time": 0
     }
 
     return messageDict

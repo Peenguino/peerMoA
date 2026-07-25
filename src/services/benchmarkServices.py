@@ -1,5 +1,6 @@
 import os
 import signal
+import time
 from eclypse.remote.service import Service
 from datasets import load_dataset
 from src.utils.messageDictUtils import get_message_dict_template
@@ -95,7 +96,8 @@ class HeadBenchmarkService(BenchmarkService):
             **messageDictTemplate,
             "id": self.current_idx,
             "expectedAnswer": ['A', 'B', 'C', 'D'][item["answer"]],
-            "count": 0
+            "count": 0,
+            "start_time": time.time()
         }
 
         prompt = f"Question: {item['question']}\n"
@@ -122,6 +124,8 @@ class TailBenchmarkService(BenchmarkService):
         self.received_count = 0
         self.total_expected = 0
         self.correct_counts_per_layer = []
+        self.global_start_time = None
+        self.total_e2e_latency = 0.0
     
     async def step(self):
 
@@ -131,11 +135,28 @@ class TailBenchmarkService(BenchmarkService):
 
         if self.received_count == 0:
             self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} started. \n")
+            self.global_start_time = time.time()
 
         self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} checking for messages... \n")
         messageDict = await self.mpi.recv()
 
         if messageDict:
+            # === Handling metrics (E2E Latency and Throughput)
+            current_time = time.time()
+
+            # E2E Latency on single message
+            prompt_start_time = messageDict.get("start_time", current_time)
+            e2e_latency = current_time - prompt_start_time
+
+            # Throughput
+            elapsed_time = max(current_time - self.global_start_time, 0.001)
+            current_throughput = (self.received_count + 1) / elapsed_time
+
+            # Sum of total latency
+            self.total_e2e_latency += e2e_latency
+
+            self.logger.info(f"=====\n LIVE METRICS | Msg ID: {messageDict['id']} | E2E Latency: {e2e_latency:.2f}s | Current Throughput: {current_throughput:.2f} msg/s \n")
+
             actual = messageDict["expectedAnswer"]
             predictions = messageDict.get("layerPredictions", [])
 
@@ -160,7 +181,14 @@ class TailBenchmarkService(BenchmarkService):
             
             # Printing results
             if self.received_count == self.total_expected:
+
                 self.logger.info(f"=====\n TailBenchmarkService ID: {self._service_id} ======== RESULTS ========. \n")
+
+                avg_e2e_latency = self.total_e2e_latency / self.total_expected
+                final_throughput = self.total_expected / elapsed_time
+
+                self.logger.info(f"FINAL METRICS | Avg E2E Latency: {avg_e2e_latency:.2f}s | Global Throughput: {final_throughput:.2f} msg/s")
+
                 for i, count in enumerate(self.correct_counts_per_layer):
                     accuracy = (count / self.total_expected) * 100
                     self.logger.info(f"Layer {i+1} Accuracy: {accuracy:.2f}% ({count}/{self.total_expected})")
