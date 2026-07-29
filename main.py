@@ -83,7 +83,9 @@ if __name__ == "__main__":
 
     app_shortname = app_config["shortName"]
     app_functions = gui_res["functions"]
+    
     num_layers = gui_res.get("num_layers", 1)
+    num_workers = gui_res.get("num_workers", 3)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     log_path = f"./logs/{app_shortname}_{timestamp}/"
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     seed = 2
     sim_config = SimulationConfig(
         seed=seed,
-        max_steps=1000000,
+        max_steps=100000000,
         step_every_ms=10,
         log_to_file=True,
         path=log_path,
@@ -100,14 +102,29 @@ if __name__ == "__main__":
         include_default_metrics=False,
     )
 
+    # Determine which arguments to pass based on a custom flag in the UI mapping.
+    # If the app is flagged as "is_pull", we instantiate it with num_workers instead of num_layers.
+    is_pull_architecture = app_config.get("is_pull", False)
+
+    if is_pull_architecture:
+        print(f"=====\n Starting Pull Architecture with {num_workers} workers... \n=====")
+        infrastructure = app_functions["infrastructureFunction"](num_workers=num_workers)
+        application = app_functions["applicationFunction"](num_workers=num_workers)
+        deploy_strategy = app_functions["deployStrategyFunction"](num_workers=num_workers)
+    else:
+        print(f"=====\n Starting Push Architecture with {num_layers} layers... \n=====")
+        infrastructure = app_functions["infrastructureFunction"](num_layers=num_layers)
+        application = app_functions["applicationFunction"](num_layers=num_layers)
+        deploy_strategy = app_functions["deployStrategyFunction"](num_layers=num_layers)
+
     simulation = Simulation(
-        app_functions["infrastructureFunction"](num_layers=num_layers),
+        infrastructure,
         simulation_config=sim_config
     )
 
     simulation.register(
-        app_functions["applicationFunction"](num_layers=num_layers),
-        app_functions["deployStrategyFunction"](num_layers=num_layers)
+        application,
+        deploy_strategy
     )
 
     simulation.start()

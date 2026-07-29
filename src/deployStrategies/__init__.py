@@ -1,2 +1,3 @@
 from .staticSingleAgentStrat import get_static_single_agent_deploy_strategy
 from .staticLayerStrat import get_static_layer_deploy_strategy
+from .pull_layerStrat import get_static_pull_deploy_strategy

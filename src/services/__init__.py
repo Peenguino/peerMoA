@@ -2,3 +2,6 @@ from .benchmarkServices import BenchmarkService, HeadBenchmarkService, TailBench
 from .inputNodeService import InputNodeService
 from .midNodeService import MidNodeService
 from .outputNodeService import OutputNodeService
+from .pull_elabMidService import ElabMidService
+from .pull_queueHeadService import QueueHeadService
+from .pull_synthOutService import SynthOutService

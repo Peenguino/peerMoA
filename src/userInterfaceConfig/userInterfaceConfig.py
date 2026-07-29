@@ -80,6 +80,15 @@ def ask_configuration_settings():
             validate=lambda text: text.isdigit() and int(text) > 0 and int(text) < 4
         ).ask())
 
+    # Asking for the number of workers if the pull application is selected
+    num_workers_selected = 3
+    if selected_application == "pullApplication":
+        num_workers_selected = int(questionary.text(
+            "How many worker nodes for the Pull MoA scheme?",
+            default="3",
+            validate=lambda text: text.isdigit() and int(text) > 0
+        ).ask())
+
     questionary.print(
         f"\n Ready! Model: {selected_model} | Topic: {BenchmarkService.selected_topic} | Application: {selected_application} ",
         style="bold fg:green"
@@ -88,5 +97,6 @@ def ask_configuration_settings():
     return {
         "app_name": selected_application,
         "functions": config_application_map[selected_application],
-        "num_layers": num_layers_selected
+        "num_layers": num_layers_selected,
+        "num_workers": num_workers_selected
     }
