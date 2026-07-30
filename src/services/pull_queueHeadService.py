@@ -89,7 +89,7 @@ class QueueHeadService(RESTService):
                 
             self.logger.info(f"=====\n Task ID {task['id']} pulled by worker. Remaining in queue: {len(self.task_queue)}\n")
 
-            if self.current_idx < len(self.dataset_test):
+            if len(self.task_queue) < self.target_queue_size and self.current_idx < len(self.dataset_test):
                 self._replenish_one()
 
             return 200, {"status": "OK", "task": task}

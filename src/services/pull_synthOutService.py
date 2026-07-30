@@ -2,6 +2,7 @@ import os
 import signal
 import time
 import re
+import asyncio
 from ollama import AsyncClient
 from eclypse.remote.service import RESTService
 from eclypse.remote.communication import rest
@@ -39,6 +40,9 @@ class SynthOutService(RESTService):
         
         self.global_start_time = None
         self.total_e2e_latency = 0.0
+
+        self.eval_queue = None
+        self._background_task_started = False
 
     @staticmethod
     def get_char_prompt(elaborations):
@@ -84,6 +88,43 @@ Responses from models:
             return match.group(0) if match else ""
         return ""
 
+    async def _process_evaluations(self):
+        """
+        Handling through this function how background task on Ollama will be managed
+        """
+        while True:
+            task = await self.eval_queue.get()
+            
+            if self.total_expected is None:
+                self.total_expected = task.get("total_expected")
+                self.logger.info(f"=====\n SynthOutService ID: {self._service_id} total expected messages set to {self.total_expected}. \n")
+
+            msg_id = task.get('id')
+            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} synthesizing message {msg_id}... \n")
+
+            char_system_prompt = self.get_char_prompt(task.get("elaborations", []))
+            elaborated_char = await self.elab_into_char(char_system_prompt, task["originalPrompt"])
+            
+            actual = task["expectedAnswer"]
+            self.logger.info(f"=====\n SynthOutService: (Actual: {actual}, Predicted: {elaborated_char})")
+            if elaborated_char == actual:
+                self.correct_count += 1
+
+            current_time = time.time()
+            e2e_latency = current_time - task.get("start_time", current_time)
+            self.total_e2e_latency += e2e_latency
+            self.received_count += 1
+            
+            elapsed_time = max(current_time - self.global_start_time, 0.001)
+            current_throughput = self.received_count / elapsed_time
+
+            self.logger.info(f"=====\n LIVE METRICS | Msg ID: {msg_id} | E2E Latency: {e2e_latency:.2f}s | Current Throughput: {current_throughput:.2f} msg/s \n")
+
+            if self.total_expected and self.received_count >= self.total_expected:
+                self._print_final_results_and_terminate(elapsed_time)
+                
+            self.eval_queue.task_done()
+
     def _print_final_results_and_terminate(self, elapsed_time):
         """
         Logs the final benchmark metrics and sends a SIGINT to stop the simulation.
@@ -115,46 +156,22 @@ Responses from models:
         Endpoint: POST SynthOutService/synthesize
         Called by ElabMidService when a task reaches its max elaborations.
         """
+
+        if not self._background_task_started:
+            self.eval_queue = asyncio.Queue()
+            asyncio.create_task(self._process_evaluations())
+            self._background_task_started = True
+            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} background evaluation loop started. \n")
+
         if self.global_start_time is None:
             self.global_start_time = time.time()
             self.logger.info(f"=====\n SynthOutService ID: {self._service_id} started. Global timer initiated.\n")
 
-        if self.total_expected is None:
-            self.total_expected = task.get("total_expected")
-            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} total expected messages set to {self.total_expected}. \n")
-
         msg_id = task.get('id')
-        self.logger.info(f"=====\n SynthOutService ID: {self._service_id} received message {msg_id} for synthesis... \n")
+        self.logger.info(f"=====\n SynthOutService ID: {self._service_id} received message {msg_id}. Queuing for background synthesis... \n")
 
-        # Process character synthesis
-        char_system_prompt = self.get_char_prompt(task.get("elaborations", []))
-        elaborated_char = await self.elab_into_char(char_system_prompt, task["originalPrompt"])
-        task["predictedAnswer"] = elaborated_char
+        # Put the task into the internal asyncio Queue
+        await self.eval_queue.put(task)
 
-        # Check correctness
-        actual = task["expectedAnswer"]
-        self.logger.info(f"=====\n SynthOutService: (Actual: {actual}, Predicted: {elaborated_char})")
-        if elaborated_char == actual:
-            self.correct_count += 1
-
-        # Calculate metrics
-        current_time = time.time()
-        
-        # E2E Latency on single message
-        prompt_start_time = task.get("start_time", current_time)
-        e2e_latency = current_time - prompt_start_time
-        self.total_e2e_latency += e2e_latency
-        
-        self.received_count += 1
-        
-        # Throughput
-        elapsed_time = max(current_time - self.global_start_time, 0.001)
-        current_throughput = self.received_count / elapsed_time
-
-        self.logger.info(f"=====\n LIVE METRICS | Msg ID: {msg_id} | E2E Latency: {e2e_latency:.2f}s | Current Throughput: {current_throughput:.2f} msg/s \n")
-
-        # End of simulation check
-        if self.total_expected and self.received_count >= self.total_expected:
-            self._print_final_results_and_terminate(elapsed_time)
-
-        return 200, {"status": "OK", "predictedAnswer": elaborated_char}
+        # Return 200 OK immediately. The worker can go back to pulling new tasks.
+        return 200, {"status": "QUEUED"}
