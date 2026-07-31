@@ -1,6 +1,6 @@
 from eclypse.graph.infrastructure import Infrastructure
 
-def get_pull_infrastructure(num_workers=3) -> Infrastructure:
+def get_pull_infrastructure(num_workers=9) -> Infrastructure:
 
     pullInfrastructure = Infrastructure(infrastructure_id="pullInfrastructure")
 
@@ -21,5 +21,9 @@ def get_pull_infrastructure(num_workers=3) -> Infrastructure:
         # Connecting Worker Node <-> SynthOut Node
         pullInfrastructure.add_edge(worker_node, "SynthOutNode")
         pullInfrastructure.add_edge("SynthOutNode", worker_node)
+
+        # Edge for virtual layers implementation
+        pullInfrastructure.add_edge("SynthOutNode", "QueueHeadNode")
+        pullInfrastructure.add_edge("QueueHeadNode", "SynthOutNode")
 
     return pullInfrastructure

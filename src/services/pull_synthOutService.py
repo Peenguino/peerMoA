@@ -25,13 +25,21 @@ class SynthOutService(RESTService):
         }
     }
 
-    def __init__(self, service_id, store_step: bool = False, *args, **kwargs):
+    elab_into_string_configuration = {
+        'model': selected_model,
+        'options': {
+            'temperature': 0.7, 
+        }
+    }
+
+    def __init__(self, service_id, max_layers=3, store_step: bool = False, *args, **kwargs):
         super().__init__(
             service_id,
             *args,
             **kwargs
         )
         self.topic = self.selected_topic
+        self.max_layers = max_layers
         
         # State and Metrics Tracking
         self.received_count = 0
@@ -88,6 +96,31 @@ Responses from models:
             return match.group(0) if match else ""
         return ""
 
+    @staticmethod
+    def get_string_prompt(elaborations):
+        num_agents = len(elaborations)
+        agents_lines = "\n".join([f"| Agent {i+1} says: {answer}" for i, answer in enumerate(elaborations)])
+        
+        system_content = f"""You have been provided with a set of responses from {num_agents} open-source 
+models to a multiple-choice question. Your task is to synthesize these responses into a single, 
+high-quality, and comprehensive summary.
+
+Responses from models:
+{agents_lines}"""
+        return system_content
+
+    @staticmethod
+    async def elab_into_string(system_prompt, original_prompt):
+        response = await AsyncClient().chat(
+            model=SynthOutService.elab_into_string_configuration['model'],
+            messages=[
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': original_prompt}
+            ],
+            options=SynthOutService.elab_into_string_configuration['options']
+        )
+        return response['message']['content'].strip()
+
     async def _process_evaluations(self):
         """
         Handling through this function how background task on Ollama will be managed
@@ -100,28 +133,43 @@ Responses from models:
                 self.logger.info(f"=====\n SynthOutService ID: {self._service_id} total expected messages set to {self.total_expected}. \n")
 
             msg_id = task.get('id')
-            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} synthesizing message {msg_id}... \n")
+            layer_count = task.get("layer_count", 0)
 
-            char_system_prompt = self.get_char_prompt(task.get("elaborations", []))
-            elaborated_char = await self.elab_into_char(char_system_prompt, task["originalPrompt"])
-            
-            actual = task["expectedAnswer"]
-            self.logger.info(f"=====\n SynthOutService: (Actual: {actual}, Predicted: {elaborated_char})")
-            if elaborated_char == actual:
-                self.correct_count += 1
+            if layer_count < self.max_layers - 1:
+                self.logger.info(f"=====\n SynthOutService ID: {self._service_id} synthesizing message {msg_id} for NEXT layer (Current: {layer_count+1}/{self.max_layers})... \n")
+                
+                string_system_prompt = self.get_string_prompt(task.get("elaborations", []))
+                elaborated_text = await self.elab_into_string(string_system_prompt, task["originalPrompt"])
+                
+                task["previous_layer_synth"] = elaborated_text
+                task["elaborations"] = []
+                task["count"] = 0
+                task["layer_count"] += 1
+                
+                await self.rest.post("QueueHeadService/requeue", task=task)
+            else:
+                self.logger.info(f"=====\n SynthOutService ID: {self._service_id} synthesizing message {msg_id} for FINAL character... \n")
 
-            current_time = time.time()
-            e2e_latency = current_time - task.get("start_time", current_time)
-            self.total_e2e_latency += e2e_latency
-            self.received_count += 1
-            
-            elapsed_time = max(current_time - self.global_start_time, 0.001)
-            current_throughput = self.received_count / elapsed_time
+                char_system_prompt = self.get_char_prompt(task.get("elaborations", []))
+                elaborated_char = await self.elab_into_char(char_system_prompt, task["originalPrompt"])
+                
+                actual = task["expectedAnswer"]
+                self.logger.info(f"=====\n SynthOutService: (Actual: {actual}, Predicted: {elaborated_char})")
+                if elaborated_char == actual:
+                    self.correct_count += 1
 
-            self.logger.info(f"=====\n LIVE METRICS | Msg ID: {msg_id} | E2E Latency: {e2e_latency:.2f}s | Current Throughput: {current_throughput:.2f} msg/s \n")
+                current_time = time.time()
+                e2e_latency = current_time - task.get("start_time", current_time)
+                self.total_e2e_latency += e2e_latency
+                self.received_count += 1
+                
+                elapsed_time = max(current_time - self.global_start_time, 0.001)
+                current_throughput = self.received_count / elapsed_time
 
-            if self.total_expected and self.received_count >= self.total_expected:
-                self._print_final_results_and_terminate(elapsed_time)
+                self.logger.info(f"=====\n LIVE METRICS | Msg ID: {msg_id} | E2E Latency: {e2e_latency:.2f}s | Current Throughput: {current_throughput:.2f} msg/s \n")
+
+                if self.total_expected and self.received_count >= self.total_expected:
+                    self._print_final_results_and_terminate(elapsed_time)
                 
             self.eval_queue.task_done()
 
@@ -159,9 +207,14 @@ Responses from models:
 
         if not self._background_task_started:
             self.eval_queue = asyncio.Queue()
-            asyncio.create_task(self._process_evaluations())
+            
+            # Creating pool of tasks for synthesizing
+            num_synth_workers = 5
+            for _ in range(num_synth_workers):
+                asyncio.create_task(self._process_evaluations())
+                
             self._background_task_started = True
-            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} background evaluation loop started. \n")
+            self.logger.info(f"=====\n SynthOutService ID: {self._service_id} background evaluation loop started with {num_synth_workers} concurrent workers. \n")
 
         if self.global_start_time is None:
             self.global_start_time = time.time()

@@ -7,7 +7,7 @@ class PullApplication(Application):
     def __init__(self, application_id, node_update_policy = None, edge_update_policy = None, node_assets = None, edge_assets = None, include_default_assets = False, requirement_init = "min", flows = None, seed = None):
         super().__init__(application_id, node_update_policy, edge_update_policy, node_assets, edge_assets, include_default_assets, requirement_init, flows, seed)
 
-def get_pull_application(num_workers=3):
+def get_pull_application(num_workers=9):
 
     pullApplication = PullApplication("pullApplication")
 
@@ -30,5 +30,9 @@ def get_pull_application(num_workers=3):
         # REST Communication: Worker <-> SynthOut (synthesize endpoint)
         pullApplication.add_edge(worker_id, "SynthOutService")
         pullApplication.add_edge("SynthOutService", worker_id)
+
+        # Edge for virtual layers implementation
+        pullApplication.add_edge("SynthOutService", "QueueHeadService")
+        pullApplication.add_edge("QueueHeadService", "SynthOutService")
 
     return pullApplication

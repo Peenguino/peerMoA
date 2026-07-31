@@ -30,14 +30,14 @@ class ElabMidService(Service):
         self.max_elaborations = max_elaborations
 
     @staticmethod
-    def get_system_prompt(elaborations):
+    def get_system_prompt(elaborations, previous_layer_synth=""):
         """
         Generates the system prompt based on the current elaborations array.
         """
         # Filter out any empty strings just in case
         valid_elaborations = [e for e in elaborations if e]
 
-        if not valid_elaborations:
+        if not valid_elaborations and not previous_layer_synth:
             return """You are a helpful, creative, and intelligent AI assistant. Provide a comprehensive,
     accurate, and well-structured answer to the user's multiple-choice question."""
 
@@ -45,7 +45,18 @@ class ElabMidService(Service):
         agents_lines = "\n".join([f"| Insight {i+1}: {text}" for i, text in enumerate(valid_elaborations)])
         
         system_prompt = f"""You have been provided with a set of insights from {num_agents} previous evaluations 
-    to a multiple-choice question. Your task is to synthesize these responses into a single, high-quality 
+    to a multiple-choice question."""
+        
+        if previous_layer_synth:
+            system_prompt += f"""
+    Additionally, you have the summarized consensus from the PREVIOUS evaluation layer:
+    ---
+    {previous_layer_synth}
+    ---
+    """
+        
+        system_prompt += f"""
+    Your task is to synthesize these responses into a single, high-quality 
     response. It is crucial to critically evaluate the information provided, recognizing that some of it 
     may be biased or incorrect. Your response should not simply replicate the given answers but should offer 
     a refined, accurate, and comprehensive reply to the instruction. Ensure your response is well-structured, 
@@ -57,11 +68,11 @@ class ElabMidService(Service):
         return system_prompt
         
     @staticmethod
-    async def elab_into_string(original_prompt, elaborations):
+    async def elab_into_string(original_prompt, elaborations, previous_layer_synth=""):
         """
         Calls the Ollama model to generate a new string based on the original prompt and previous elaborations.
         """
-        system_prompt = ElabMidService.get_system_prompt(elaborations)
+        system_prompt = ElabMidService.get_system_prompt(elaborations, previous_layer_synth)
 
         response = await AsyncClient().chat(
             model=ElabMidService.elab_into_string_configuration['model'],
@@ -100,9 +111,11 @@ class ElabMidService(Service):
                 
                 original_prompt = task["originalPrompt"]
                 elaborations = task.get("elaborations", [])
+
+                previous_layer_synth = task.get("previous_layer_synth", "")
                 
                 # Process the prompt with Ollama
-                elaborated_text = await self.elab_into_string(original_prompt, elaborations)
+                elaborated_text = await self.elab_into_string(original_prompt, elaborations, previous_layer_synth)
                 
                 # Update the task state
                 task["elaborations"].append(elaborated_text)

@@ -25,6 +25,10 @@ def get_message_dict_template_pull():
         "predictedAnswer": "",
         # Tracks the number of elaborations completed to route the message properly
         "count": 0,
+        # Virtual layer counter
+        "layer_count": 0,
+        # Text contribution from previous layer
+        "previous_layer_synth": "",
         # Timestamp for End-to-End latency measurement
         "start_time": 0.0,
         # Total len of dataset, used by synthOutService without accessing the dataset
