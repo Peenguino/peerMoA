@@ -109,7 +109,13 @@ if __name__ == "__main__":
     if is_pull_architecture:
         print(f"=====\n Starting Pull Architecture with {num_workers} workers... \n=====")
         infrastructure = app_functions["infrastructureFunction"](num_workers=num_workers)
-        application = app_functions["applicationFunction"](num_workers=num_workers)
+
+        app_kwargs = {"num_workers": num_workers}
+        ollama_hosts = os.environ.get("PEERMOA_PULL_OLLAMA_HOSTS")
+        if ollama_hosts:
+            app_kwargs["ollama_hosts"] = ollama_hosts
+
+        application = app_functions["applicationFunction"](**app_kwargs)
         deploy_strategy = app_functions["deployStrategyFunction"](num_workers=num_workers)
     else:
         print(f"=====\n Starting Push Architecture with {num_layers} layers... \n=====")

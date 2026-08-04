@@ -20,7 +20,7 @@ class ElabMidService(Service):
         }
     }
 
-    def __init__(self, service_id, max_elaborations=3, store_step: bool = False, *args, **kwargs):
+    def __init__(self, service_id, max_elaborations=3, store_step: bool = False, ollama_host="http://127.0.0.1:11434", *args, **kwargs):
         super().__init__(
             service_id,
             comm_interface="rest",
@@ -28,6 +28,7 @@ class ElabMidService(Service):
             **kwargs
         )
         self.max_elaborations = max_elaborations
+        self.ollama_host = ollama_host
 
     @staticmethod
     def get_system_prompt(elaborations, previous_layer_synth=""):
@@ -68,13 +69,11 @@ class ElabMidService(Service):
         return system_prompt
         
     @staticmethod
-    async def elab_into_string(original_prompt, elaborations, previous_layer_synth=""):
-        """
-        Calls the Ollama model to generate a new string based on the original prompt and previous elaborations.
-        """
+    async def elab_into_string(original_prompt, elaborations, previous_layer_synth="", ollama_host="http://127.0.0.1:11434"):
         system_prompt = ElabMidService.get_system_prompt(elaborations, previous_layer_synth)
 
-        response = await AsyncClient().chat(
+        # Inizializziamo il client passando l'host personalizzato
+        response = await AsyncClient(host=ollama_host).chat(
             model=ElabMidService.elab_into_string_configuration['model'],
             messages=[
                 {
@@ -115,7 +114,7 @@ class ElabMidService(Service):
                 previous_layer_synth = task.get("previous_layer_synth", "")
                 
                 # Process the prompt with Ollama
-                elaborated_text = await self.elab_into_string(original_prompt, elaborations, previous_layer_synth)
+                elaborated_text = await self.elab_into_string(original_prompt, elaborations, previous_layer_synth, self.ollama_host)
                 
                 # Update the task state
                 task["elaborations"].append(elaborated_text)
