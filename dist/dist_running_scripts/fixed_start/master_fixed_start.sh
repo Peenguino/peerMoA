@@ -24,6 +24,10 @@ source .venv/bin/activate
 
 export PYTHONPATH="$REPO_ROOT"
 
+export RAY_health_check_period_ms=15000
+export RAY_health_check_timeout_ms=30000
+export RAY_health_check_failure_threshold=8
+
 # Important: IP of Machine that hosts the Master
 MASTER_IP="192.168.1.104"
 

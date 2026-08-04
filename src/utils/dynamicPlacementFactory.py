@@ -8,6 +8,6 @@ class DynamicPlacementFactory(RayOptionsFactory):
         if node_id != "manager":
             options["resources"] = {node_id: 1}
             
-        options["num_cpus"] = 0
+        options["num_cpus"] = 0.1
         return options
     
