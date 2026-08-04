@@ -25,7 +25,12 @@ source .venv/bin/activate
 export PYTHONPATH="$REPO_ROOT"
 
 # Important: IP of Machine that hosts the Master
-MASTER_IP="10.66.66.11"
+MASTER_IP="192.168.1.104"
+
+# Safety: make sure no stale Ollama-host override leaks into this run
+# (relevant for the pull architecture: workers must hit their own localhost Ollama)
+unset PEERMOA_PULL_OLLAMA_HOSTS
+unset PEERMOA_PULL_OLLAMA_HOSTS_FILE
 
 # Clearing whitespaces
 RESOURCES=$(cat "$CONFIG_FILE" | tr -d ' \n')
