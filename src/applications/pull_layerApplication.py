@@ -41,13 +41,13 @@ def _resolve_ollama_hosts(ollama_hosts=None):
     return None
 
 
-def get_pull_application(num_workers=9, ollama_hosts=None):
+def get_pull_application(num_workers=9, ollama_hosts=None, requeue_policy="head"):
 
     pullApplication = PullApplication("pullApplication")
     resolved_hosts = _resolve_ollama_hosts(ollama_hosts)
 
     # Adding core services
-    pullApplication.add_service(QueueHeadService("QueueHeadService"))
+    pullApplication.add_service(QueueHeadService("QueueHeadService", requeue_policy=requeue_policy))
     pullApplication.add_service(SynthOutService("SynthOutService"))
 
     # Adding worker services and edges

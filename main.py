@@ -86,9 +86,18 @@ if __name__ == "__main__":
     
     num_layers = gui_res.get("num_layers", 1)
     num_workers = gui_res.get("num_workers", 3)
+    requeue_policy = gui_res.get("requeue_policy", "head")
+
+    # Naming the run after the configuration it belongs to, so the six benchmark
+    # runs are identifiable from the log directory alone.
+    # PUSH-LOCAL, PUSH-DIST, PULL-LOCAL-HEAD, PULL-DIST-HEAD, PULL-LOCAL-TAIL, PULL-DIST-TAIL
+    deploy_tag = "LOCAL" if os.environ.get("PEERMOA_RUN_MODE", "local").lower() == "local" else "DIST"
+    run_tag = f"{app_shortname}-{deploy_tag}"
+    if app_config.get("is_pull", False):
+        run_tag += f"-{requeue_policy.upper()}"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    log_path = f"./logs/{app_shortname}_{timestamp}/"
+    log_path = f"./logs/{run_tag}_{timestamp}/"
 
     seed = 2
     sim_config = SimulationConfig(
@@ -107,10 +116,10 @@ if __name__ == "__main__":
     is_pull_architecture = app_config.get("is_pull", False)
 
     if is_pull_architecture:
-        print(f"=====\n Starting Pull Architecture with {num_workers} workers... \n=====")
+        print(f"=====\n Starting Pull Architecture [{run_tag}] with {num_workers} workers, requeue policy '{requeue_policy}'... \n=====")
         infrastructure = app_functions["infrastructureFunction"](num_workers=num_workers)
 
-        app_kwargs = {"num_workers": num_workers}
+        app_kwargs = {"num_workers": num_workers, "requeue_policy": requeue_policy}
         ollama_hosts = os.environ.get("PEERMOA_PULL_OLLAMA_HOSTS")
         if ollama_hosts:
             app_kwargs["ollama_hosts"] = ollama_hosts

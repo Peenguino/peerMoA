@@ -15,12 +15,25 @@ class QueueHeadService(RESTService):
     
     selected_topic = "abstract_algebra"
 
-    def __init__(self, service_id, store_step: bool = False, *args, **kwargs):
+    # Where a partially elaborated task is re-inserted by /requeue:
+    # - "head": priority to work in progress, so a task finishes its layer sooner.
+    #           A co-located worker can immediately re-pull what it just requeued,
+    #           which starves the remote ones in a distributed deployment.
+    # - "tail": the task goes behind the queue, breaking that self-feeding loop
+    #           at the cost of more work in progress (and so higher E2E latency).
+    REQUEUE_POLICIES = ("head", "tail")
+
+    def __init__(self, service_id, requeue_policy: str = "head", store_step: bool = False, *args, **kwargs):
         super().__init__(
             service_id,
-            *args, 
+            *args,
             **kwargs
         )
+        if requeue_policy not in self.REQUEUE_POLICIES:
+            raise ValueError(
+                f"Unknown requeue_policy '{requeue_policy}'. Expected one of {self.REQUEUE_POLICIES}."
+            )
+        self.requeue_policy = requeue_policy
         self.topic = self.selected_topic
         self.dataset_test = None
         
@@ -38,6 +51,7 @@ class QueueHeadService(RESTService):
         Method called on start of a RESTService.
         """
         self.logger.info(f"=====\n QueueHeadService '{self._service_id}': loading dataset... \n")
+        self.logger.info(f"=====\n QueueHeadService: topic '{self.topic}' | requeue policy '{self.requeue_policy}' \n")
         self.dataset_test = load_dataset("cais/mmlu", self.topic, split="test")
         self.dataset_loaded = True
         
@@ -102,8 +116,10 @@ class QueueHeadService(RESTService):
         Endpoint: POST QueueHeadService/requeue
         Called by ElabMidService to re-insert a task with count < 3.
         """
-        # Re-insert at the HEAD of the queue
-        # - Priority to partially processed tasks so they finish faster.
-        self.task_queue.appendleft(task)
+        if self.requeue_policy == "head":
+            # Priority to partially processed tasks so they finish faster.
+            self.task_queue.appendleft(task)
+        else:
+            self.task_queue.append(task)
         self.logger.info(f"=====\n Task ID {task['id']} requeued (count: {task['count']}). Queue size: {len(self.task_queue)}\n")
         return 200, {"status": "OK"}
