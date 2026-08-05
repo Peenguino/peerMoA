@@ -28,7 +28,17 @@ export RAY_health_check_period_ms=15000
 export RAY_health_check_timeout_ms=30000
 export RAY_health_check_failure_threshold=8
 
-MASTER_IP="192.168.1.104"
+# IP of the machine hosting the Ray head. Keep it in sync with the value printed
+# by master_fixed_start.sh; override with PEERMOA_MASTER_IP when DHCP moves it.
+MASTER_IP="${PEERMOA_MASTER_IP:-192.168.1.12}"
+
+# Fail fast with a readable message instead of Ray's 30s GCS timeout.
+if ! timeout 5 bash -c "cat < /dev/null > /dev/tcp/$MASTER_IP/6379" 2>/dev/null; then
+    echo "Error: cannot reach the Ray head at $MASTER_IP:6379."
+    echo "Check that 'ray start --head' is already running on the master and that"
+    echo "PEERMOA_MASTER_IP matches its current IP."
+    exit 1
+fi
 
 # Safety: make sure no stale Ollama-host override leaks into this run
 unset PEERMOA_PULL_OLLAMA_HOSTS

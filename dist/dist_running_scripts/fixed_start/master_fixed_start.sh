@@ -28,8 +28,25 @@ export RAY_health_check_period_ms=15000
 export RAY_health_check_timeout_ms=30000
 export RAY_health_check_failure_threshold=8
 
-# Important: IP of Machine that hosts the Master
-MASTER_IP="192.168.1.104"
+# Important: IP of Machine that hosts the Master.
+# Auto-detected from the default route, so a new DHCP lease does not silently
+# break the run. Override with: PEERMOA_MASTER_IP=x.x.x.x ./master_fixed_start.sh <config>
+MASTER_IP="${PEERMOA_MASTER_IP:-$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}')}"
+
+if [ -z "$MASTER_IP" ]; then
+    echo "Error: could not auto-detect the master IP. Set PEERMOA_MASTER_IP manually."
+    exit 1
+fi
+
+# The IP must belong to this machine, otherwise ray start --head binds fine but
+# every client then times out on "Failed to connect to GCS at $MASTER_IP:6379".
+if ! ip -4 -o addr show | grep -qw "$MASTER_IP"; then
+    echo "Error: $MASTER_IP is not assigned to any local interface. Local IPs:"
+    ip -4 -o addr show scope global | awk '{print "  - " $4}'
+    exit 1
+fi
+
+echo "Master IP: $MASTER_IP (workers must use: PEERMOA_MASTER_IP=$MASTER_IP ./worker_fixed_start.sh <config>)"
 
 # Safety: make sure no stale Ollama-host override leaks into this run
 # (relevant for the pull architecture: workers must hit their own localhost Ollama)
