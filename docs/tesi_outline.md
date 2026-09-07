@@ -105,17 +105,18 @@ un'ipotesi di scheduling distribuito per MoA.
 ## 5. Esperimenti
 
 ### 5.1 Setup sperimentale
-- 5.1.1 Le due versioni del sistema e perché confrontarle
-- 5.1.2 Cluster: numero macchine, ruoli, specifiche HW, GPU/CPU, tok/s e tempo di
+- 5.1.1 [x] Le due versioni del sistema e perché confrontarle
+- 5.1.2 [x] Metriche di valutazione
+- 5.1.3 Cluster: numero macchine, ruoli, specifiche HW, GPU/CPU, tok/s e tempo di
   servizio $t_s$ misurati
-- 5.1.3 Modello (`qwen2.5:1.5b`) e motivazione
-- 5.1.4 Dataset (MMLU `college_computer_science`, 100 query, split test)
-- 5.1.5 Parametri fissati (temperature, `target_queue_size`, `num_synth_workers`,
+- 5.1.4 Modello (`qwen2.5:1.5b`) e motivazione
+- 5.1.5 Dataset (MMLU `college_computer_science`, 100 query, split test)
+- 5.1.6 Parametri fissati (temperature, `target_queue_size`, `num_synth_workers`,
   sliding window, requeue policy)
-- 5.1.6 System prompt (ruoli mid/output, con/senza risposta precedente)
-- 5.1.7 Versioni software (Python pinnato via `uv`, Ollama, `requirements.txt`)
-- 5.1.8 Le sei configurazioni — tabella riepilogativa
-- 5.1.9 Procedura e criteri di validità (stesso commit, verifica dai log)
+- 5.1.7 System prompt (ruoli mid/output, con/senza risposta precedente)
+- 5.1.8 Versioni software (Python pinnato via `uv`, Ollama, `requirements.txt`)
+- 5.1.9 Le sei configurazioni — tabella riepilogativa
+- 5.1.10 Procedura e criteri di validità (stesso commit, verifica dai log)
 
 ### 5.2 Risultati (solo presentazione, niente interpretazione)
 - 5.2.1 Metriche aggregate delle sei configurazioni
@@ -156,3 +157,91 @@ MMLU (Hendrycks et al.), Ray, letteratura scheduling push/pull citata in 3.3.
       multi-macchina (per essere precisi nel gap statement di 3.5).
 - [ ] Decidere se 5.2 include grafici (consigliato: almeno throughput/latency a barre
       per le 6 config, e un grafico di distribuzione del carico per nodo).
+
+---
+
+## Grafici proposti per il Capitolo 5
+
+Selezionati 10 dei candidati iniziali (i restanti 5 — scatter in-flight/E2E, tetto
+teorico vs osservato, effetto della politica di coda, durata elaborazione sul
+master, capacita' vs quota osservata — sono stati scartati). Tutti e 10 sono
+generati come immagini PNG e gia' pronti da guardare e importare, non solo
+descritti. Script sorgente:
+[`docs/scripts/generate_benchmark_charts.py`](scripts/generate_benchmark_charts.py)
+(dati trascritti a mano da `benchmark_6_configurazioni.md`; se il documento cambia,
+aggiornare i dizionari nello script). Per rigenerarli dopo una modifica:
+
+```bash
+uv run --with matplotlib python docs/scripts/generate_benchmark_charts.py
+```
+
+I file finiscono in `docs/img/benchmark_charts/`. Palette e stile seguono la skill
+`dataviz` del progetto (colore fisso per schema — blu=push, arancio=pull head,
+acqua=pull tail — cosi' l'occhio lo riconosce da un grafico all'altro; niente
+doppio asse; scale indipendenti quando due metriche vivono a ordini di grandezza
+diversi). Ogni voce riporta cosa dimostra e a quale sotto-sezione dell'outline si
+aggancia, cosi' la selezione si puo' fare senza tornare al documento sorgente.
+Segnati con **[core]** i candidati che coprono un punto che il capitolo fa comunque
+fatica a non avere; gli altri sono rinforzi opzionali.
+
+1. **[core] Throughput per le 6 configurazioni** — la metrica primaria del
+   documento. Sezione 5.2.1.
+   ![Throughput per le 6 configurazioni](img/benchmark_charts/g01_throughput_6config.png)
+
+2. **E2E latency (media/mediana/p95) per le 6 configurazioni**, scala log — stessa
+   codifica colore del grafico 1 cosi' i due si leggono in coppia. Sezione 5.2.1.
+   ![E2E latency media/mediana/p95](img/benchmark_charts/g02_e2e_latency_mean_median_p95.png)
+
+3. **E2E media e in-flight (Little), piccoli multipli** — due pannelli impilati
+   (stesso ordine di configurazioni), non un doppio asse: rende visivo il punto che
+   il documento sottolinea esplicitamente, che la latenza E2E tra i tre run locali
+   (230/97/592s) e' fuorviante senza gli in-flight (9.8/4.4/23.8), che la spiegano
+   quasi per intero. Sezione 5.2.1, richiamato in 5.3.4 (limiti).
+   ![E2E media e in-flight, piccoli multipli](img/benchmark_charts/g03_e2e_mean_and_inflight_panels.png)
+
+4. **[core] Distribuzione del carico, barre impilate al 100%** — il contrasto
+   strutturale centrale: push sempre 33/33/33 esatto, pull sbilanciato in modo
+   diverso tra head e tail. Sezione 5.2.2.
+   ![Distribuzione del carico, impilate al 100%](img/benchmark_charts/g05_load_distribution_stacked.png)
+
+5. **[core] PUSH-DIST vs PULL-DIST-HEAD, per nodo + throughput** — il confronto che
+   il documento stesso isola come quello che "porta il risultato" (stesso cluster,
+   stesso commit, unica variabile la disciplina di assegnazione). Sezioni 5.2.2 e
+   5.3.1.
+   ![PUSH-DIST vs PULL-DIST-HEAD per nodo](img/benchmark_charts/g06_push_dist_vs_pull_dist_head.png)
+
+6. **[core] Slope chart: throughput LOCAL → DIST per schema** — l'effetto opposto
+   della distribuzione (push scende, pull sale) in un colpo solo, il risultato piu'
+   netto dell'esperimento secondo le conclusioni del documento. Sezioni 5.2.3 e
+   5.3.2.
+   ![Slope chart local to dist](img/benchmark_charts/g07_slope_local_to_dist.png)
+
+7. **Guadagno atteso vs osservato** (lavoro delocalizzato % / riduzione wall clock %
+   / delta throughput %), piccoli multipli per coppia — include anche
+   `PULL-TAIL LOCAL→DIST`, non presente nella tabella del documento sorgente (riga
+   lasciata vuota li'): valori calcolati qui, 63.6 / 39.5 / 65.4, con lo stesso
+   schema di lettura delle altre due righe. Rende visivo il test che smaschera un
+   guadagno solo apparente. Sezioni 5.2.3/5.3.2.
+   ![Guadagno atteso vs osservato](img/benchmark_charts/g09_expected_vs_observed_gain.png)
+
+8. **Accuracy per le 6 configurazioni, con barra d'errore ~5 punti** — comunica
+   visivamente, invece che solo a parole, che le differenze di accuracy tra le sei
+   configurazioni sono entro rumore statistico e non vanno lette come risultato.
+   Utile in 5.3.4 (limiti della misura).
+   ![Accuracy con barra d'errore](img/benchmark_charts/g12_accuracy_with_error_bars.png)
+
+9. **Wall clock per le 6 configurazioni** — non aggiunge un'informazione
+   concettualmente nuova rispetto al throughput (sono l'uno l'inverso
+   proporzionale dell'altro a query fisse), ma da' la sensazione di "quanto e'
+   durato davvero" un run; utile se in 5.1.9 vuoi motivare perche' una sola
+   ripetizione per configurazione.
+   ![Wall clock per le 6 configurazioni](img/benchmark_charts/g13_wallclock_6config.png)
+
+10. **Caratterizzazione del cluster: tempo di servizio `t_s` per macchina** — non e'
+    un grafico di risultati ma di setup: quantifica l'eterogeneita' dichiarata del
+    cluster prima ancora di mostrare l'effetto sui run. Il valore di `.11` e'
+    tratteggiato e marcato con `*` perche' ricavato dal throughput del run, non
+    misurato a sistema scarico con `curl` come gli altri due (il documento non
+    riporta i tok/s per nessuna macchina, quindi quella colonna e' stata omessa
+    rispetto all'idea iniziale). Andrebbe in 5.1.2, non in 5.2/5.3.
+    ![t_s per macchina](img/benchmark_charts/g14_ts_per_machine.png)
