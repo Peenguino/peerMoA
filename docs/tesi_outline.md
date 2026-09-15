@@ -107,39 +107,45 @@ un'ipotesi di scheduling distribuito per MoA.
 ### 5.1 Setup sperimentale
 - 5.1.1 [x] Le due versioni del sistema e perché confrontarle
 - 5.1.2 [x] Metriche di valutazione
-- 5.1.3 Cluster: numero macchine, ruoli, specifiche HW, GPU/CPU, tok/s e tempo di
+- 5.1.3 [x] Cluster: numero macchine, ruoli, specifiche HW, GPU/CPU, tok/s e tempo di
   servizio $t_s$ misurati
-- 5.1.4 Modello (`qwen2.5:1.5b`) e motivazione
-- 5.1.5 Dataset (MMLU `college_computer_science`, 100 query, split test)
-- 5.1.6 Parametri fissati (temperature, `target_queue_size`, `num_synth_workers`,
+- 5.1.4 [x] Modello (`qwen2.5:1.5b`) e motivazione
+- 5.1.5 [x] Dataset (MMLU `college_computer_science`, 100 query, split test)
+- 5.1.6 [x] Parametri fissati (temperature, `target_queue_size`, `num_synth_workers`,
   sliding window, requeue policy)
-- 5.1.7 System prompt (ruoli mid/output, con/senza risposta precedente)
-- 5.1.8 Versioni software (Python pinnato via `uv`, Ollama, `requirements.txt`)
-- 5.1.9 Le sei configurazioni — tabella riepilogativa
-- 5.1.10 Procedura e criteri di validità (stesso commit, verifica dai log)
+- 5.1.7 [x] System prompt (ruoli mid/output, con/senza risposta precedente)
+- 5.1.8 [x] Versioni software (Python pinnato via `uv`, Ollama, `requirements.txt`)
+- 5.1.9 [x] Le sei configurazioni — tabella riepilogativa
 
 ### 5.2 Risultati (solo presentazione, niente interpretazione)
-- 5.2.1 Metriche aggregate delle sei configurazioni
-- 5.2.2 Distribuzione del carico tra i nodi
-- 5.2.3 Confronto locale vs distribuito, per schema
-- 5.2.4 Effetto della politica di coda
+- 5.2.1 [x] Metriche aggregate delle sei configurazioni
+- 5.2.2 [x] Distribuzione del carico tra i nodi
+- 5.2.3 [x] Confronto locale vs distribuito, per schema
+- 5.2.4 [x] Effetto della politica di coda
 
 ### 5.3 Discussione
-- 5.3.1 Push vs pull a parità di deployment (tetto teorico, fungibilità della capacità)
-- 5.3.2 Effetto della distribuzione su ciascuno schema
-- 5.3.3 Effetto della politica di coda (ciclo auto-alimentato, collisioni
-  sintesi/chiusura layer)
-- 5.3.4 Validità e limiti della misura (singola ripetizione, accuracy rumorosa, chiamate
-  LLM non pari, riserva metodologica sul confronto locale→dist)
 
-> Nota: `docs/benchmark_6_configurazioni.md` è già un draft di 5.2+5.3: da ristrutturare
-> in prosa per i capitoli, non da riscrivere da zero.
+> Direzione: non quattro sottosezioni indipendenti. 5.3.1→5.3.3 sono tre prove
+> convergenti dello stesso risultato — perché vince `PULL-DIST-HEAD`, la sola
+> configurazione a primeggiare su entrambe le metriche primarie insieme
+> (throughput 0.0767 msg/s, il più alto delle sei; E2E media 56.54 s, la più
+> bassa delle sei; in-flight 4.3 msg, pari al minimo) — vista da tre angolazioni
+> complementari. 5.3.4 è sezione di tenuta, non lista di limiti generici (quelli
+> più ampi stanno in 6.2).
+
+- 5.3.1 [x] Push vs pull a parità di deployment — il confronto controllato (tetto
+  teorico, fungibilità della capacità)
+
+- 5.3.2 [x] Effetto della distribuzione su ciascuno schema — il segno si inverte
+
+- 5.3.3 [x] Effetto della politica di coda — `head` non è un caso, è parte della configurazione vincente (ciclo auto-alimentato, collisioni sintesi/chiusura layer)
+
 
 ## 6. Conclusioni
-- 6.1 Sintesi del lavoro e risultati principali
-- 6.2 Limiti (singola ripetizione, cluster piccolo, accuracy rumorosa, $t_s$ stimato non
+- 6.1 [x] Sintesi del lavoro e risultati principali
+- 6.2 [x] Limiti (singola ripetizione, cluster piccolo, accuracy rumorosa, $t_s$ stimato non
   a sistema scarico)
-- 6.3 Lavori futuri (repliche multiple, cluster più grande/eterogeneo, policy ibride,
+- 6.3 [x] Lavori futuri (repliche multiple, cluster più grande/eterogeneo, policy ibride,
   misura diretta di $t_s$, instrumentazione tempo di coda in Ollama, modelli più grandi,
   altri topic MMLU)
 - 6.4 Ringraziamenti
@@ -148,17 +154,6 @@ un'ipotesi di scheduling distribuito per MoA.
 Da popolare almeno con: paper MoA originale (TogetherComputer), paper ECLYPSE, Ollama,
 MMLU (Hendrycks et al.), Ray, letteratura scheduling push/pull citata in 3.3.
 
----
-
-## Aperti / TODO
-- [ ] Raccogliere le fonti per 3.2/3.3/3.4 (framework multi-agente, letteratura
-      scheduling push/pull, eventuali altri framework edge/fog oltre ECLYPSE).
-- [ ] Verificare se il repo/paper TogetherComputer discute in qualche punto deploy
-      multi-macchina (per essere precisi nel gap statement di 3.5).
-- [ ] Decidere se 5.2 include grafici (consigliato: almeno throughput/latency a barre
-      per le 6 config, e un grafico di distribuzione del carico per nodo).
-
----
 
 ## Grafici proposti per il Capitolo 5
 
@@ -245,3 +240,21 @@ fatica a non avere; gli altri sono rinforzi opzionali.
     riporta i tok/s per nessuna macchina, quindi quella colonna e' stata omessa
     rispetto all'idea iniziale). Andrebbe in 5.1.2, non in 5.2/5.3.
     ![t_s per macchina](img/benchmark_charts/g14_ts_per_machine.png)
+
+
+%\begin{table}[htbp]
+%    \centering
+%    \begin{tabular}{@{}llll@{}}
+%        \toprule
+%        \textbf{Configurazione} & \textbf{E2E (s)} & \textbf{Throughput (msg/s)} & \textbf{In-Flight (msg)} \\
+%        \midrule
+%        \texttt{PUSH-LOCAL}       & 229.89 & 0.0426 & 9.8 \\
+%        \texttt{PUSH-DIST}        & 692.85 & 0.0140  & 9.7 \\
+%        \texttt{PULL-LOCAL-HEAD}  & 97.39 & 0.0450  & 4.4 \\
+%        \texttt{PULL-DIST-HEAD}   & 56.54 & 0.0767  & 4.3 \\
+%        \texttt{PULL-LOCAL-TAIL}  & 592.01 & 0.0402  & 23.8 \\
+%        \texttt{PULL-DIST-TAIL}   & 392.02 & 0.0665  & 26.1 \\
+%        \bottomrule
+%    \end{tabular}
+%    \label{tab:six-configs}
+%\end{table}

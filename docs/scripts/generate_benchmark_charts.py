@@ -326,11 +326,11 @@ def g07_slope_local_dist():
     for i, (label, v_local, v_dist, color) in enumerate(pairs):
         ax.annotate(f"{v_local:.4f}", (0, v_local), xytext=(-12, offsets[i]),
                     textcoords="offset points", ha="right", va="center", fontsize=9,
-                    color=color, fontweight="bold")
+                    color=INK_SECONDARY, fontweight="bold")
         delta = 100 * (v_dist - v_local) / v_local
         ax.annotate(f"{v_dist:.4f}  ({delta:+.1f}%)", (1, v_dist), xytext=(10, 0),
                     textcoords="offset points", ha="left", va="center", fontsize=9,
-                    color=color, fontweight="bold")
+                    color=INK_SECONDARY, fontweight="bold")
 
     legend_elems = [
         Line2D([0], [0], color=C_PUSH, marker="o", linewidth=2.4, markersize=7, label="push"),
@@ -414,15 +414,24 @@ def g12_accuracy_error_bars():
 # --------------------------------------------------------------------------
 def g13_wallclock():
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
-    x = range(len(CONFIGS))
-    bars = ax.bar(x, WALLCLOCK, color=CONFIG_COLORS, width=0.6,
+    # Raggruppate per schema: le due barre di una coppia (LOCAL/DIST) si toccano
+    # (offset dal centro di gruppo = meta' larghezza barra), i gruppi restano
+    # separati da uno stacco visibile (group_spacing > 2 * bar_width).
+    bar_width = 0.6
+    group_spacing = 1.5
+    x = []
+    for g in range(len(CONFIGS) // 2):
+        center = g * group_spacing
+        x.append(center - bar_width / 2)
+        x.append(center + bar_width / 2)
+    bars = ax.bar(x, WALLCLOCK, color=CONFIG_COLORS, width=bar_width,
                    edgecolor=INK_PRIMARY, linewidth=0.6, zorder=3)
     for b, a in zip(bars, CONFIG_ALPHA):
         b.set_alpha(a)
     bar_labels(ax, bars, fmt="{:.0f}s")
-    ax.set_ylabel("Wall clock (s)")
-    ax.set_xticks(list(x))
-    ax.set_xticklabels(CONFIG_LABELS, fontsize=9)
+    ax.set_ylabel("Durata Run (s)")
+    ax.set_xticks(x)
+    ax.set_xticklabels(CONFIG_LABELS, fontsize=6)
     ax.set_title("Durata complessiva del run", loc="center", fontsize=9)
     style_axes(ax)
     savefig(fig, "g13_wallclock_6config.png")
