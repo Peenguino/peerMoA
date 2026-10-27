@@ -140,7 +140,7 @@ The middle part (`InputNodeService`, `MidNodeService`, `OutputNodeService`) will
 Shared-queue implementation of the Pull scheme, built out of `QueueHeadService`, `SynthOutService` and `N` `ElabMidService` workers, all wired together over REST edges:
 
 <p align="center">
-    <img src="./docs/img/applicationPull.drawio.png" width="400">
+    <img src="./docs/img/applicationPull.drawio.png" width="450">
 </p>
 
 Configured through the interactive UI (or `get_pull_application(...)`) with:
@@ -156,9 +156,8 @@ Deploy is based on [Ray](https://www.ray.io/), driven by `PEERMOA_RUN_MODE`:
 | ---- | ------------------- | --------- |
 | Local | `local` (default) | Single machine, no Ray cluster. |
 | Fixed cluster | `dist_strict` | Each machine advertises Ray custom resource tags (one per `Service`/`Node`), and the deploy strategy pins every agent to its tag — the **fixed** Service ↔ Machine mapping is decided up front. |
-| Dynamic cluster | `dist_dynamic` | No resource tags: Ray schedules agents across the connected machines on its own. |
 
-Scripts for both modes live under [`dist/dist_running_scripts/`](./dist/dist_running_scripts/), with example resource maps under [`dist/dist_fixed_configs/`](./dist/dist_fixed_configs/).
+Scripts live under [`dist/dist_running_scripts/`](./dist/dist_running_scripts/), with example resource maps under [`dist/dist_fixed_configs/`](./dist/dist_fixed_configs/).
 
 ### Fixed placement (`dist_strict`)
 
@@ -266,19 +265,7 @@ export PEERMOA_PULL_OLLAMA_HOSTS_FILE=/path/to/pull_ollama_hosts.json
 export PEERMOA_PULL_OLLAMA_HOSTS='{"ElabMidService-1": "http://192.168.1.11:11434"}'
 ```
 
-### Dynamic placement (`dist_dynamic`)
-
-No per-node resource tags: Ray decides where each agent runs across the connected machines. Edit the hardcoded master address in [`master_dyn_start.sh`](./dist/dist_running_scripts/dynamic_start/master_dyn_start.sh) / [`worker_dyn_start.sh`](./dist/dist_running_scripts/dynamic_start/worker_dyn_start.sh) to your cluster, then:
-
-```sh
-# On the master
-./dist/dist_running_scripts/dynamic_start/master_dyn_start.sh
-
-# On each worker
-./dist/dist_running_scripts/dynamic_start/worker_dyn_start.sh
-```
-
 ## Further documentation
 
 - [`docs/setup_notes.md`](./docs/setup_notes.md) — environment-specific setup notes (ARM VM without sudo, AMD GPU through the ollama service, ...).
-- [`docs/benchmark_6_configurazioni.md`](./docs/benchmark_6_configurazioni.md) — the six push/pull benchmark configurations used to compare the two schemes, and their results.
+- [`./docs/benchmark_6_conf.md`](./docs/benchmark_6_conf.md) — the six push/pull benchmark configurations used to compare the two schemes, and their results.
